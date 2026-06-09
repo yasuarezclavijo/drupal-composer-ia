@@ -9,7 +9,6 @@ grumphp:
       file: ./composer.json
       no_check_all: true
       no_check_publish: true
-    phplint: ~
     git_blacklist:
       keywords:
         # Merge conflict markers (more specific patterns)
