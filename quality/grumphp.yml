@@ -1,0 +1,80 @@
+grumphp:
+  git_hook_variables:
+    EXEC_GRUMPHP_COMMAND: './scripts/grumphp.sh'
+  ascii:
+    failed:
+    succeeded:
+  tasks:
+    composer:
+      file: ./composer.json
+      no_check_all: true
+      no_check_publish: true
+    phplint: ~
+    git_blacklist:
+      keywords:
+        # Merge conflict markers (more specific patterns)
+        - "^<{7} HEAD$"
+        - "^={7}$"
+        - "^>{7} "
+        # Debug functions
+        - "die\\("
+        - "var_dump\\("
+        - "syslog\\("
+        - "print_r\\("
+        - "dpm\\("
+        - "\\{\\{ debug\\(\\) \\}\\}"
+      triggered_by:
+        - inc
+        - install
+        - js
+        - css
+        - scss
+        - lock
+        - module
+        - php
+        - profile
+        - test
+        - theme
+        - yml
+      regexp_type: E
+    jsonlint: ~
+    phpcs:
+      standard: ['phpcs.xml']
+      ignore_patterns:
+        - libraries/
+        - sites/*/settings.php
+      triggered_by:
+        - inc
+        - install
+        - module
+        - php
+        - profile
+        - test
+        - theme
+        - info
+        - txt
+        - md
+        - yml
+      whitelist_patterns:
+        - /^web\/profiles\/custom\/(.*)/
+        - /^web\/modules\/custom\/(.*)/
+        - /^web\/themes\/custom\/(.*)/
+    # Note: PHPStan is configured in the qa task and executed via wrapper
+    # GrumPHP would fail if no PHP files exist in the custom paths
+    # Use 'composer lint:phpstan' to run PHPStan with proper error handling
+    git_commit_message:
+      allow_empty_message: false
+      enforce_capitalized_subject: true
+      enforce_no_subject_punctuations: false
+      enforce_no_subject_trailing_period: true
+      enforce_single_lined_subject: true
+      type_scope_conventions: []
+      skip_on_merge_commit: true
+      max_body_width: 72
+      max_subject_width: 80
+      case_insensitive: true
+      multiline: true
+      additional_modifiers: ''
+    # Validators disabled (can be enabled when needed):
+    # yamllint: ~
+    # securitychecker_composeraudit: ~

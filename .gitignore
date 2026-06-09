@@ -1,0 +1,24 @@
+# Composer
+vendor/
+composer.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.AppleDouble
+
+# Logs
+*.log
+
+# Misc
+.env
+.env.local
+node_modules/
+coverage/

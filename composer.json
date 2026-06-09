@@ -1,0 +1,49 @@
+{
+    "name": "yeison/drupal-agentic-blueprint",
+    "description": "Reutilizable blueprint para proyectos Drupal CMS 2.0 con arquitectura multiagente y calidad de código determinística optimizada para Claude Code.",
+    "type": "library",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Yeison A. Suarez",
+            "email": "yasuarezclavijo@gmail.com"
+        }
+    ],
+    "keywords": [
+        "drupal",
+        "drupal-cms",
+        "drupal-11",
+        "quality-gates",
+        "phpcs",
+        "phpstan",
+        "grumphp",
+        "claude-code",
+        "ai-assisted-development",
+        "multiagent"
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "drupal/coder": "^9.0",
+        "mglaman/phpstan-drupal": "^2.0",
+        "phpro/grumphp": "^2.21",
+        "phpstan/phpstan": "^2.2",
+        "squizlabs/php_codesniffer": "^4.0",
+        "friendsoftwig/twigcs": "^6.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "DrupalAgenticBlueprint\\": "src/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php scripts/installer.php install"
+        ],
+        "post-update-cmd": [
+            "@php scripts/installer.php update"
+        ]
+    }
+}

@@ -1,0 +1,59 @@
+{
+  "blueprint": "drupal-agentic",
+  "version": "1.0.0",
+  "released": "2024-06-08",
+  "author": "Yeison A. Suarez",
+  "description": "Drupal CMS 2.0 blueprint with deterministic quality gates and multiagent architecture for Claude Code",
+  "drupal_version": "11.3+",
+  "php_version": "8.2+",
+  "license": "MIT",
+  "roadmap": {
+    "v1": {
+      "status": "current",
+      "features": [
+        "Quality gates (PHPCS, PHPStan, PHPUnit, GrumPHP)",
+        "Multiagent architecture (Coordinator, Architect, Reviewers)",
+        "Skills for module/content-type/API creation",
+        "Pre-commit hooks with deterministic validation",
+        "Comprehensive documentation",
+        "DDEV compatibility"
+      ],
+      "stability": "production"
+    },
+    "v2": {
+      "status": "planned",
+      "target": "Q3 2024",
+      "features": [
+        "CI/CD integration (GitHub Actions)",
+        "Code quality metrics dashboard",
+        "Test reporting and coverage trends",
+        "Performance benchmarking",
+        "Security audit automation"
+      ]
+    },
+    "v3": {
+      "status": "planned",
+      "target": "Q4 2024",
+      "features": [
+        "Self-healing (auto-fix suggestions)",
+        "ML-based code quality predictions",
+        "Full observability and monitoring",
+        "Multi-team orchestration",
+        "Advanced cache strategies"
+      ]
+    }
+  },
+  "requirements": {
+    "composer": "^2.0",
+    "php": "8.2+",
+    "drupal": "11.3+",
+    "optional": {
+      "ddev": "recommended",
+      "docker": "recommended"
+    }
+  },
+  "installation": {
+    "method": "composer",
+    "command": "composer require yeison/drupal-agentic-blueprint"
+  }
+}
