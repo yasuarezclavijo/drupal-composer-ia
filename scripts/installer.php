@@ -93,12 +93,14 @@ class BlueprintInstaller {
   }
 
   public function update(): void {
+    // Si no está instalado aún, correr install en su lugar.
+    if (!file_exists($this->project_root . '/.claude/agents/coordinator.md')) {
+      $this->install();
+      return;
+    }
+
     echo "\n📦 Updating Drupal Agentic Blueprint\n";
     echo "   Project root: {$this->project_root}\n\n";
-
-    if (!file_exists($this->project_root . '/.claude/agents/coordinator.md')) {
-      $this->error('Blueprint not yet installed. Run: composer require kdb/drupal-agentic-blueprint');
-    }
 
     // .claude/ y quality configs se sobreescriben (son del blueprint, no del usuario)
     $this->copy_claude_dir(force: true);

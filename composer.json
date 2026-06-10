@@ -1,7 +1,7 @@
 {
     "name": "kdb/drupal-agentic-blueprint",
     "description": "Reutilizable blueprint para proyectos Drupal CMS 2.0 con arquitectura multiagente y calidad de código determinística optimizada para Claude Code.",
-    "type": "library",
+    "type": "composer-plugin",
     "version": "1.0.0",
     "license": "MIT",
     "authors": [
@@ -23,9 +23,11 @@
         "multiagent"
     ],
     "require": {
-        "php": "^8.2"
+        "php": "^8.2",
+        "composer-plugin-api": "^2.0"
     },
     "require-dev": {
+        "composer/composer": "^2.0",
         "drupal/coder": "^9.0",
         "mglaman/phpstan-drupal": "^2.0",
         "phpro/grumphp": "^2.21",
@@ -38,12 +40,7 @@
             "DrupalAgenticBlueprint\\": "src/"
         }
     },
-    "scripts": {
-        "post-install-cmd": [
-            "@php scripts/installer.php install"
-        ],
-        "post-update-cmd": [
-            "@php scripts/installer.php update"
-        ]
+    "extra": {
+        "class": "DrupalAgenticBlueprint\\ComposerPlugin"
     }
 }
