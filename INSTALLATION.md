@@ -13,7 +13,7 @@
 ### Paso 1: Instalar via Composer
 
 ```bash
-composer require yeison/drupal-agentic-blueprint
+composer require kdb/drupal-agentic-blueprint
 ```
 
 Composer ejecutará automáticamente el `post-install-cmd` que instala el blueprint.
@@ -32,7 +32,7 @@ Si no hay errores, ¡listo! El blueprint está instalado.
 Si quieres personalizar el blueprint para tu equipo:
 
 ```bash
-composer require yeison/drupal-agentic-blueprint -- --interactive
+composer require kdb/drupal-agentic-blueprint -- --interactive
 ```
 
 Te hará preguntas:
@@ -187,7 +187,7 @@ composer fix                # PHPCBF auto-correction
 Para obtener nuevas versiones y mejoras:
 
 ```bash
-composer update yeison/drupal-agentic-blueprint
+composer update kdb/drupal-agentic-blueprint
 ```
 
 v1.x mantiene backwards compatibility, así que actualizar no rompe nada.

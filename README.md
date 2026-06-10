@@ -13,7 +13,7 @@ Blueprint reutilizable para proyectos Drupal CMS 2.0 con arquitectura multiagent
 ## Instalación rápida
 
 ```bash
-composer require yeison/drupal-agentic-blueprint
+composer require kdb/drupal-agentic-blueprint
 ```
 
 El blueprint se instalará automáticamente en la raíz de tu proyecto Drupal CMS 2.0.
@@ -21,7 +21,7 @@ El blueprint se instalará automáticamente en la raíz de tu proyecto Drupal CM
 ## Instalación interactiva
 
 ```bash
-composer require yeison/drupal-agentic-blueprint -- --interactive
+composer require kdb/drupal-agentic-blueprint -- --interactive
 ```
 
 Responde preguntas para personalizar el blueprint según tu agencia u organización.
@@ -30,6 +30,7 @@ Responde preguntas para personalizar el blueprint según tu agencia u organizaci
 
 - **AGENTS.md**: Definición de agentes disponibles
 - **CLAUDE.md**: Configuración para Claude Code
+- **PROMPTS.md**: Referencia rápida de comandos y prompts por flujo
 - **agents/**: Detalle de cada agente
 - **skills/**: Capacidades y workflows
 - **quality/**: Configuración de validaciones

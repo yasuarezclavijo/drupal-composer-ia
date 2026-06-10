@@ -5,7 +5,7 @@
 El **Drupal Agentic Blueprint** es una arquitectura de desarrollo asistida por IA que integra:
 
 1. **Quality Gates determinísticos** (PHPCS, PHPStan, PHPUnit, GrumPHP)
-2. **Arquitectura multiagente** (Coordinador, Arquitecto, Revisores especializados)
+2. **Arquitectura multiagente** (Coordinador, Arquitecto, TDD Specialist, Revisores especializados)
 3. **Skills reutilizables** (workflows automatizados)
 4. **Documentación as Code** (AGENTS.md, CLAUDE.md, skills/)
 5. **Convenciones de Drupal 11** (Entity API, Services, Plugins)
@@ -48,6 +48,11 @@ User Request
    │   ├─ Entity design
    │   ├─ API design
    │   └─ Performance
+   │
+   ├─→ [TDD Specialist]
+   │   ├─ Diseño de casos de prueba
+   │   ├─ Tests Unit/Kernel/Functional (red)
+   │   └─ Acompaña fases green/refactor
    │
    ├─→ [Code Reviewer]
    │   ├─ PHPCS
@@ -108,7 +113,10 @@ Blueprint repository
 │   ├── architecture.md (este archivo)
 │   ├── coding-standards.md
 │   ├── quality-gates.md
-│   └── installation.md
+│   ├── installation.md
+│   └── activity-log/      # Registro de actividad por tarea
+│       ├── README.md
+│       └── _TEMPLATE.md
 └── .blueprint/
     └── manifest.json      # Metadata de versión
 ```
@@ -142,6 +150,23 @@ web/themes/custom/
 │   └── package.json
 ```
 
+### 6. Activity Log (Registro de actividad)
+
+Cada tarea orquestada por el Coordinador queda registrada en `docs/activity-log/`:
+
+```
+docs/activity-log/
+├── README.md                              # Índice cronológico
+├── _TEMPLATE.md                           # Plantilla de cada entrada
+└── YYYY-MM-DD-<slug-del-requisito>.md     # Una entrada por tarea
+```
+
+Cada archivo documenta: requisito original → descomposición → agentes involucrados → archivos creados/modificados → comandos ejecutados (PASS/FAIL) → resultado final (commits, pendientes).
+
+Esto convierte la capacidad "Generar documentación de decisiones" del Coordinador en un artefacto persistente y versionado en Git, navegable entre sesiones de Claude Code.
+
+Ver [agents/coordinator.md](../agents/coordinator.md#registro-de-actividad-activity-log) y [docs/activity-log/README.md](activity-log/README.md).
+
 ## Flujo de desarrollo recomendado
 
 ### 1. Nuevo feature
@@ -159,10 +184,20 @@ Drupal Architect diseña
   ├─ API contracts
   └─ Cache strategy
   ↓
-Developer implementa
+TDD Specialist diseña pruebas (red)
+  ├─ Casos de prueba (happy path, edge cases, permisos)
+  ├─ Tests Unit/Kernel/Functional
+  └─ composer test → FAIL esperado
+  ↓
+Developer implementa (green)
+  ├─ Código mínimo para pasar los tests
   ├─ Módulo / Theme / API
-  ├─ Tests (Unit + Functional)
+  ├─ composer test → PASS
   └─ Documentación
+  ↓
+Refactor (TDD Specialist + Developer)
+  ├─ Mejoras de diseño/performance
+  └─ composer test && composer qa
   ↓
 Code Reviewer valida
   ├─ PHPCS
@@ -191,9 +226,12 @@ Reproduce
   ↓
 Identificar causa
   ↓
-Implementar fix
+TDD Specialist: test que reproduce el bug (red)
+  ├─ composer test → FAIL esperado
+  ↓
+Implementar fix (green)
   ├─ Cambios mínimos
-  ├─ Tests (cobertura)
+  ├─ El test anterior pasa
   └─ Documentación
   ↓
 Validaciones automáticas (composer qa)
@@ -255,6 +293,14 @@ Merge
 - phpstan.neon
 - grumphp.yml
 - CLAUDE.md
+
+### 5. TDD: tests antes que implementación (vs. tests al final)
+
+**Decisión**: El TDD Specialist diseña y escribe los tests (red) antes de que exista código de producción; la implementación se considera completa solo cuando los pasa (green).
+
+**Razón**: Tests escritos después de la implementación tienden a confirmar lo que el código ya hace, no lo que debería hacer. Tests primero fuerzan a definir el contrato/comportamiento esperado y detectan errores de diseño temprano.
+
+**Agente**: [agents/tdd-specialist.md](../agents/tdd-specialist.md)
 
 ## Flujos de datos
 

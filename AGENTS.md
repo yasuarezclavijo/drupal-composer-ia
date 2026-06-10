@@ -11,6 +11,7 @@ Orquesta el trabajo de todos los agentes. Responsable de:
 - Asignar tareas a agentes especializados
 - Validar que la solución es completa
 - Revisar conflictos entre constraints
+- Registrar cada tarea en [docs/activity-log/](docs/activity-log/)
 
 **Cuándo usarlo**: En inicio de una tarea grande o cuando hay múltiples aspectos (código, seguridad, accesibilidad).
 
@@ -34,6 +35,25 @@ Especializado en arquitectura Drupal 11. Responsable de:
 
 ```bash
 claude-code /agent:drupal-architect "diseñar API para gestionar campañas"
+```
+
+---
+
+## 🧪 TDD Specialist
+
+**Archivo**: [agents/tdd-specialist.md](agents/tdd-specialist.md)
+
+Diseña casos de prueba y escribe tests ANTES de la implementación (TDD: Red-Green-Refactor). Responsable de:
+- Diseñar casos de prueba (happy path, edge cases, permisos) a partir del requisito y el diseño del Architect
+- Escribir tests Unit/Kernel/Functional que fallen primero (red)
+- Verificar que la implementación los hace pasar (green) sin reescribirlos arbitrariamente
+- Acompañar la fase Green con un límite de **3 intentos**: si tras el tercero los tests siguen en rojo, detener y generar un "Resumen de bloqueo" para el usuario (ver [agents/tdd-specialist.md](agents/tdd-specialist.md#template-resumen-de-bloqueo-3-intentos-sin-verde))
+- Sugerir refactors una vez los tests están en verde
+
+**Cuándo usarlo**: Justo después del diseño y ANTES de escribir código de producción, para cualquier feature nueva o bug fix.
+
+```bash
+claude-code /agent:tdd-specialist "diseñar tests para el servicio CampaignService"
 ```
 
 ---
@@ -97,9 +117,10 @@ claude-code /agent:accessibility-reviewer "revisar nuevo tema de inicio"
 
 1. **Planificación**: Coordinador analiza el requisito
 2. **Diseño**: Drupal Architect define la solución
-3. **Desarrollo**: Código se escribe con quality gates
-4. **Revisión**: Code Reviewer + Security Reviewer + Accessibility Reviewer
-5. **Integración**: Coordinador valida que todo funciona junto
+3. **Tests primero (TDD)**: TDD Specialist diseña casos de prueba y escribe tests que fallan (red)
+4. **Desarrollo**: Código se escribe hasta pasar los tests (green, máx. 3 intentos; si no se logra, se genera un "Resumen de bloqueo" para el usuario), con quality gates
+5. **Revisión**: Code Reviewer + Security Reviewer + Accessibility Reviewer
+6. **Integración**: Coordinador valida que todo funciona junto
 
 ## 📋 Tabla de capacidades
 
@@ -107,6 +128,7 @@ claude-code /agent:accessibility-reviewer "revisar nuevo tema de inicio"
 |--------|-------|---------|---------|-----------|---------------|-----------|
 | Coordinador | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Drupal Architect | ✓ | ✓ | - | - | - | ✓✓ |
+| TDD Specialist | - | - | ✓✓ | - | - | ✓ |
 | Code Reviewer | ✓✓ | ✓✓ | ✓✓ | - | - | ✓ |
 | Security Reviewer | ✓ | ✓ | - | ✓✓ | - | ✓ |
 | Accessibility Reviewer | - | - | - | - | ✓✓ | ✓ |

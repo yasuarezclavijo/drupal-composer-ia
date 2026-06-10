@@ -3,10 +3,17 @@
 /**
  * Drupal Agentic Blueprint Installer
  *
- * Instala el blueprint en un proyecto Drupal existente.
+ * Instala y configura el blueprint completo en un proyecto Drupal:
+ *   - Agentes Claude Code (.claude/agents/)
+ *   - Slash commands Claude Code (.claude/commands/)
+ *   - CLAUDE.md con instrucciones del proyecto
+ *   - Quality gates: PHPCS, PHPStan, GrumPHP
+ *   - Scripts wrapper compatibles con DDEV
+ *   - Merge de require-dev y scripts en composer.json del proyecto
+ *   - Docs de referencia (architecture, quality-gates, activity-log)
  *
- * Usage:
- *   php scripts/installer.php install [--interactive]
+ * Usage (auto-run via post-install-cmd):
+ *   php scripts/installer.php install
  *   php scripts/installer.php update
  */
 
@@ -14,231 +21,329 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $command = $argv[1] ?? 'help';
-$interactive = in_array('--interactive', $argv);
 
 class BlueprintInstaller {
-  private $project_root;
-  private $blueprint_root;
+
+  private string $project_root;
+  private string $blueprint_root;
+
+  /** Dependencias dev que el stack determinístico necesita */
+  private array $require_dev = [
+    'drupal/coder'              => '^9.0',
+    'mglaman/phpstan-drupal'    => '^2.0',
+    'phpro/grumphp'             => '^2.21',
+    'phpstan/phpstan'           => '^2.1',
+    'squizlabs/php_codesniffer' => '^4.0',
+    'friendsoftwig/twigcs'      => '^6.6',
+  ];
+
+  /** Scripts Composer que el proyecto destino necesita */
+  private array $composer_scripts = [
+    'qa'          => ['@lint:phpcs', '@lint:phpstan'],
+    'test'        => 'vendor/bin/phpunit --coverage-text',
+    'fix'         => 'vendor/bin/phpcbf --standard=phpcs.xml',
+    'lint:phpcs'  => '@php scripts/lint-php.sh',
+    'lint:phpstan'=> '@php scripts/phpstan-wrapper.sh',
+    'audit'       => 'composer audit',
+  ];
+
+  /** Scripts wrapper a copiar al proyecto (excluye installer.php) */
+  private array $wrapper_scripts = [
+    'grumphp.sh',
+    'lint-php.sh',
+    'phpstan-wrapper.sh',
+    'phpcbf-wrapper.sh',
+    'twig-lint-wrapper.sh',
+  ];
 
   public function __construct() {
     $this->blueprint_root = dirname(__DIR__);
-    // Project root is vendor/yeison/drupal-agentic-blueprint/../../../
-    $this->project_root = realpath($this->blueprint_root . '/../../../../');
+    // vendor/kdb/drupal-agentic-blueprint → 3 levels up = project root
+    $candidate = realpath($this->blueprint_root . '/../../../');
 
-    if (!$this->project_root || !file_exists($this->project_root . '/composer.json')) {
-      $this->error('Blueprint must be installed via Composer in a Drupal project');
+    if (!$candidate || !file_exists($candidate . '/composer.json')) {
+      $this->error(
+        "Blueprint must be installed via Composer in a project with composer.json.\n" .
+        "  Blueprint root: {$this->blueprint_root}\n" .
+        "  Candidate root: {$candidate}"
+      );
     }
+
+    $this->project_root = $candidate;
   }
 
-  public function install($interactive = false) {
+  // =========================================================================
+  // Public commands
+  // =========================================================================
+
+  public function install(): void {
     echo "\n🚀 Installing Drupal Agentic Blueprint v1.0.0\n";
-    echo "Project root: {$this->project_root}\n\n";
+    echo "   Project root: {$this->project_root}\n\n";
 
-    if ($interactive) {
-      $this->interactive_setup();
-    } else {
-      $this->standard_setup();
-    }
+    $this->copy_claude_dir();
+    $this->copy_single('CLAUDE.md',            '/CLAUDE.md',         skip_existing: true);
+    $this->copy_quality_configs(force: false);
+    $this->copy_wrapper_scripts(force: false);
+    $this->copy_docs();
+    $this->ensure_drupal_dirs();
+    $this->merge_composer_json();
 
-    $this->success('Blueprint installed successfully!');
-    $this->next_steps();
+    $this->success('Blueprint installed!');
+    $this->next_steps(is_update: false);
   }
 
-  public function update() {
+  public function update(): void {
     echo "\n📦 Updating Drupal Agentic Blueprint\n";
-    echo "Project root: {$this->project_root}\n\n";
+    echo "   Project root: {$this->project_root}\n\n";
 
-    // Check if already installed
-    if (!file_exists($this->project_root . '/CLAUDE.md')) {
-      echo "❌ Blueprint not yet installed. Run: composer require yeison/drupal-agentic-blueprint\n";
-      exit(1);
+    if (!file_exists($this->project_root . '/.claude/agents/coordinator.md')) {
+      $this->error('Blueprint not yet installed. Run: composer require kdb/drupal-agentic-blueprint');
     }
 
-    // v1 doesn't have breaking changes, just inform user
-    echo "✓ Blueprint is up to date\n";
-    echo "Current version: 1.0.0\n\n";
+    // .claude/ y quality configs se sobreescriben (son del blueprint, no del usuario)
+    $this->copy_claude_dir(force: true);
+    $this->copy_quality_configs(force: true);
+    $this->copy_wrapper_scripts(force: true);
+    // CLAUDE.md y docs NO se sobreescriben (pueden tener customizaciones)
+    $this->copy_docs(skip_existing: true);
+    $this->merge_composer_json();
+
+    $this->success('Blueprint updated!');
+    $this->next_steps(is_update: true);
   }
 
-  private function standard_setup() {
-    // Copy configuration files
-    $files = [
-      'AGENTS.md' => '/AGENTS.md',
-      'CLAUDE.md' => '/CLAUDE.md',
-      'quality/phpcs.xml' => '/phpcs.xml',
+  // =========================================================================
+  // Install steps
+  // =========================================================================
+
+  private function copy_claude_dir(bool $force = false): void {
+    $src  = $this->blueprint_root . '/.claude';
+    $dest = $this->project_root   . '/.claude';
+
+    if ($force) {
+      $this->force_copy_directory($src, $dest);
+    } else {
+      $this->copy_directory($src, $dest);
+    }
+
+    echo "✓ .claude/ (6 agents + 3 slash commands)\n";
+  }
+
+  private function copy_quality_configs(bool $force): void {
+    $configs = [
+      'quality/phpcs.xml'    => '/phpcs.xml',
       'quality/phpstan.neon' => '/phpstan.neon',
-      'quality/grumphp.yml' => '/grumphp.yml',
+      'quality/grumphp.yml'  => '/grumphp.yml',
     ];
 
-    foreach ($files as $source => $dest) {
-      $source_path = $this->blueprint_root . '/' . $source;
-      $dest_path = $this->project_root . $dest;
+    foreach ($configs as $src => $dest) {
+      $this->copy_single($src, $dest, skip_existing: !$force);
+    }
+  }
 
-      if (file_exists($source_path)) {
-        if (!file_exists($dest_path)) {
-          copy($source_path, $dest_path);
-          echo "✓ Copied {$dest}\n";
-        } else {
-          echo "⊘ {$dest} already exists (skipping)\n";
-        }
+  private function copy_wrapper_scripts(bool $force): void {
+    $dest_dir = $this->project_root . '/scripts';
+    if (!is_dir($dest_dir)) {
+      mkdir($dest_dir, 0755, true);
+    }
+
+    foreach ($this->wrapper_scripts as $script) {
+      $src  = $this->blueprint_root . '/scripts/' . $script;
+      $dest = $dest_dir . '/' . $script;
+
+      if (!file_exists($src)) {
+        continue;
+      }
+
+      if (!file_exists($dest) || $force) {
+        copy($src, $dest);
+        chmod($dest, 0755);
+        echo ($force ? '↺' : '✓') . " scripts/{$script}\n";
+      } else {
+        echo "⊘ scripts/{$script} already exists — skipped\n";
       }
     }
+  }
 
-    // Create directories
-    $dirs = [
-      '/agents',
-      '/skills',
-      '/docs',
-      '/web/modules/custom',
-      '/web/themes/custom',
-      '/web/profiles/custom',
-    ];
+  private function copy_docs(bool $skip_existing = false): void {
+    $src  = $this->blueprint_root . '/docs';
+    $dest = $this->project_root   . '/docs';
 
+    if ($skip_existing) {
+      $this->copy_directory($src, $dest);       // never overwrites
+    } else {
+      $this->copy_directory($src, $dest);
+    }
+
+    echo "✓ docs/ (architecture.md, quality-gates.md, activity-log/)\n";
+  }
+
+  private function ensure_drupal_dirs(): void {
+    $dirs = ['/web/modules/custom', '/web/themes/custom', '/web/profiles/custom'];
     foreach ($dirs as $dir) {
       $path = $this->project_root . $dir;
       if (!is_dir($path)) {
         mkdir($path, 0755, true);
-        echo "✓ Created directory {$dir}\n";
+        echo "✓ Created {$dir}\n";
       }
     }
-
-    // Copy agents
-    $this->copy_directory(
-      $this->blueprint_root . '/agents',
-      $this->project_root . '/agents'
-    );
-
-    // Copy skills
-    $this->copy_directory(
-      $this->blueprint_root . '/skills',
-      $this->project_root . '/skills'
-    );
-
-    // Copy docs
-    $this->copy_directory(
-      $this->blueprint_root . '/docs',
-      $this->project_root . '/docs'
-    );
   }
 
-  private function interactive_setup() {
-    echo "? Project name (e.g., 'TrazApp'): ";
-    $project_name = trim(fgets(STDIN));
+  private function merge_composer_json(): void {
+    $path = $this->project_root . '/composer.json';
+    $json = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+    $changed = false;
 
-    echo "? Organization/Agency (e.g., 'Yeison A. Suarez'): ";
-    $organization = trim(fgets(STDIN));
-
-    echo "? Enable strict security review? [y/N]: ";
-    $strict_security = strtolower(trim(fgets(STDIN))) === 'y';
-
-    echo "? Enable accessibility review? [y/N]: ";
-    $strict_a11y = strtolower(trim(fgets(STDIN))) === 'y';
-
-    // Run standard setup
-    $this->standard_setup();
-
-    // Customize CLAUDE.md
-    $claude_file = $this->project_root . '/CLAUDE.md';
-    $content = file_get_contents($claude_file);
-
-    // Replace placeholders
-    $content = str_replace(
-      ['PROJECT_NAME', 'ORGANIZATION'],
-      [$project_name, $organization],
-      $content
-    );
-
-    if ($strict_security) {
-      $content = str_replace(
-        'strictness: "medium"',
-        'strictness: "high"',
-        $content
-      );
-    }
-
-    file_put_contents($claude_file, $content);
-    echo "\n✓ Customized CLAUDE.md with your settings\n";
-  }
-
-  private function copy_directory($src, $dest) {
-    if (!is_dir($src)) return;
-
-    if (!is_dir($dest)) {
-      mkdir($dest, 0755, true);
-    }
-
-    $files = new \RecursiveIteratorIterator(
-      new \RecursiveDirectoryIterator($src),
-      \RecursiveIteratorIterator::SELF_FIRST
-    );
-
-    foreach ($files as $file) {
-      if ($file->isDot()) continue;
-
-      $relative = substr($file->getPathname(), strlen($src) + 1);
-      $target = $dest . '/' . $relative;
-
-      if ($file->isDir()) {
-        if (!is_dir($target)) {
-          mkdir($target, 0755, true);
-        }
+    // --- require-dev ---
+    $json['require-dev'] ??= [];
+    foreach ($this->require_dev as $package => $version) {
+      if (!isset($json['require-dev'][$package])) {
+        $json['require-dev'][$package] = $version;
+        echo "✓ Added require-dev: {$package}:{$version}\n";
+        $changed = true;
       } else {
-        if (!file_exists($target)) {
-          copy($file->getPathname(), $target);
-        }
+        echo "⊘ require-dev {$package} already present — skipped\n";
+      }
+    }
+
+    // --- scripts ---
+    $json['scripts'] ??= [];
+    foreach ($this->composer_scripts as $name => $cmd) {
+      if (!isset($json['scripts'][$name])) {
+        $json['scripts'][$name] = $cmd;
+        echo "✓ Added script: composer {$name}\n";
+        $changed = true;
+      } else {
+        echo "⊘ script '{$name}' already present — skipped\n";
+      }
+    }
+
+    if ($changed) {
+      file_put_contents(
+        $path,
+        json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n"
+      );
+      echo "✓ composer.json updated\n";
+    }
+  }
+
+  // =========================================================================
+  // File helpers
+  // =========================================================================
+
+  private function copy_single(string $src_rel, string $dest_rel, bool $skip_existing): void {
+    $src  = $this->blueprint_root . '/' . $src_rel;
+    $dest = $this->project_root   . $dest_rel;
+
+    if (!file_exists($src)) {
+      return;
+    }
+
+    if ($skip_existing && file_exists($dest)) {
+      echo "⊘ {$dest_rel} already exists — skipped\n";
+      return;
+    }
+
+    $dir = dirname($dest);
+    if (!is_dir($dir)) {
+      mkdir($dir, 0755, true);
+    }
+
+    copy($src, $dest);
+    echo "✓ Copied {$dest_rel}\n";
+  }
+
+  private function copy_directory(string $src, string $dest): void {
+    if (!is_dir($src)) return;
+    if (!is_dir($dest)) mkdir($dest, 0755, true);
+
+    $items = new RecursiveIteratorIterator(
+      new RecursiveDirectoryIterator($src, RecursiveDirectoryIterator::SKIP_DOTS),
+      RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($items as $item) {
+      $relative = substr($item->getPathname(), strlen($src) + 1);
+      $target   = $dest . '/' . $relative;
+
+      if ($item->isDir()) {
+        if (!is_dir($target)) mkdir($target, 0755, true);
+      } elseif (!file_exists($target)) {
+        copy($item->getPathname(), $target);
       }
     }
   }
 
-  private function success($message) {
-    echo "\n✅ {$message}\n";
+  private function force_copy_directory(string $src, string $dest): void {
+    if (!is_dir($src)) return;
+    if (!is_dir($dest)) mkdir($dest, 0755, true);
+
+    $items = new RecursiveIteratorIterator(
+      new RecursiveDirectoryIterator($src, RecursiveDirectoryIterator::SKIP_DOTS),
+      RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($items as $item) {
+      $relative = substr($item->getPathname(), strlen($src) + 1);
+      $target   = $dest . '/' . $relative;
+
+      if ($item->isDir()) {
+        if (!is_dir($target)) mkdir($target, 0755, true);
+      } else {
+        copy($item->getPathname(), $target);
+      }
+    }
   }
 
-  private function error($message) {
-    echo "\n❌ Error: {$message}\n";
+  // =========================================================================
+  // Output helpers
+  // =========================================================================
+
+  private function success(string $msg): void {
+    echo "\n✅ {$msg}\n";
+  }
+
+  private function error(string $msg): void {
+    echo "\n❌ Error: {$msg}\n";
     exit(1);
   }
 
-  private function next_steps() {
+  private function next_steps(bool $is_update): void {
     echo "\n📋 Next steps:\n\n";
-    echo "1. Review configuration:\n";
-    echo "   - AGENTS.md: Available agents\n";
-    echo "   - CLAUDE.md: Configuration for your project\n";
-    echo "   - phpcs.xml, phpstan.neon, grumphp.yml: Quality gates\n\n";
 
-    echo "2. Validate installation:\n";
-    echo "   composer lint:php\n";
-    echo "   composer lint:phpcs\n";
-    echo "   composer lint:phpstan\n\n";
+    if (!$is_update) {
+      echo "  1. Install quality gate dependencies:\n";
+      echo "     composer update --dev\n\n";
+      echo "     GrumPHP registrará los pre-commit hooks automáticamente.\n\n";
+    }
 
-    echo "3. Create your first module:\n";
-    echo "   /skill:create-module 'mi_modulo'\n\n";
+    echo "  2. Verificar quality gates:\n";
+    echo "     composer qa        # PHPCS + PHPStan\n";
+    echo "     composer test      # PHPUnit + coverage\n";
+    echo "     composer audit     # Dependencias vulnerables\n\n";
 
-    echo "4. Read the documentation:\n";
-    echo "   - docs/architecture.md\n";
-    echo "   - docs/quality-gates.md\n\n";
+    echo "  3. Abrir Claude Code (terminal en raíz del proyecto):\n";
+    echo "     claude\n";
+    echo "     Presiona ← para ver los 6 agentes disponibles.\n\n";
 
-    echo "Questions? See AGENTS.md for available agents!\n\n";
+    echo "  4. Slash commands disponibles:\n";
+    echo "     /create-module\n";
+    echo "     /create-content-type\n";
+    echo "     /create-api-endpoint\n\n";
+
+    echo "  5. Primera tarea con el coordinador:\n";
+    echo "     @coordinator implementar sistema de notificaciones\n\n";
   }
 }
 
-// Main
+// =============================================================================
 $installer = new BlueprintInstaller();
 
-switch ($command) {
-  case 'install':
-    $installer->install($interactive);
-    break;
-
-  case 'update':
-    $installer->update();
-    break;
-
-  case 'help':
+switch ($argv[1] ?? 'help') {
+  case 'install': $installer->install(); break;
+  case 'update':  $installer->update();  break;
   default:
-    echo "Drupal Agentic Blueprint Installer\n";
     echo "Usage:\n";
-    echo "  php scripts/installer.php install [--interactive]\n";
+    echo "  php scripts/installer.php install\n";
     echo "  php scripts/installer.php update\n";
-    echo "  php scripts/installer.php help\n";
-    break;
 }

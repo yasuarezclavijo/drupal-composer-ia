@@ -115,7 +115,7 @@ drupal-agentic-blueprint/
 ### Instalación en nuevo proyecto
 
 ```bash
-composer require yeison/drupal-agentic-blueprint
+composer require kdb/drupal-agentic-blueprint
 ```
 
 El blueprint se instala automáticamente en la raíz.
@@ -433,8 +433,8 @@ MIT - Libre para usar, modificar y distribuir.
 ## 🎉 Próximos pasos
 
 1. **Publicar como Composer package**: `composer repo`
-2. **Crear GitHub repo público**: `yeison/drupal-agentic-blueprint`
-3. **Instalar en TrazApp para testing**: `composer require yeison/drupal-agentic-blueprint`
+2. **Crear GitHub repo público**: `kdb/drupal-agentic-blueprint`
+3. **Instalar en TrazApp para testing**: `composer require kdb/drupal-agentic-blueprint`
 4. **Comenzar v2.0 planning**: CI/CD, métricas
 
 ---
@@ -445,10 +445,10 @@ El blueprint está completamente funcional, documentado y listo para ser instala
 
 ```bash
 # Para comenzar:
-composer require yeison/drupal-agentic-blueprint
+composer require kdb/drupal-agentic-blueprint
 
 # O interactivo:
-composer require yeison/drupal-agentic-blueprint -- --interactive
+composer require kdb/drupal-agentic-blueprint -- --interactive
 ```
 
 ¡Listo para revolucionar tu desarrollo Drupal! 🚀

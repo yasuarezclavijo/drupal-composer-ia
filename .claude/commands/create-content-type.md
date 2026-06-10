@@ -5,7 +5,7 @@
 ## Entrada
 
 ```
-/skill:create-content-type "nombre" [--machine-name="nombre_maquina"] [--with-views] [--with-forms]
+/create-content-type "nombre" [--machine-name="nombre_maquina"] [--with-views] [--with-forms]
 ```
 
 ## Salida esperada
@@ -43,7 +43,55 @@ Campos:
   - Manager (entity_reference -> user)
 ```
 
-### 2. Crear configuración
+### 2. Diseñar y escribir tests (TDD — red)
+
+Antes de crear la configuración (`node.type.*.yml`, `field.storage.*.yml`, `field.field.*.yml`), el TDD Specialist escribe un test Kernel que verifica que el content type y sus campos existen y que se puede crear un nodo válido. `composer test` debe **fallar** porque la configuración todavía no existe.
+
+```php
+// tests/src/Kernel/CampaignContentTypeTest.php
+namespace Drupal\Tests\campaigns\Kernel;
+
+use Drupal\KernelTests\KernelTestBase;
+use Drupal\node\Entity\Node;
+
+class CampaignContentTypeTest extends KernelTestBase {
+
+  protected static $modules = ['system', 'user', 'field', 'text', 'datetime', 'node', 'campaigns'];
+
+  protected function setUp(): void {
+    parent::setUp();
+    $this->installEntitySchema('node');
+    $this->installEntitySchema('user');
+    $this->installConfig(['field', 'node', 'campaigns']);
+  }
+
+  public function testCampaignContentTypeExists(): void {
+    $type = \Drupal::entityTypeManager()->getStorage('node_type')->load('campaign');
+    $this->assertNotNull($type, 'El content type "campaign" debe existir.');
+  }
+
+  public function testCampaignHasDescriptionField(): void {
+    $fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', 'campaign');
+    $this->assertArrayHasKey('field_description', $fields);
+  }
+
+  public function testCreateCampaignNode(): void {
+    $node = Node::create([
+      'type' => 'campaign',
+      'title' => 'Test Campaign',
+      'field_description' => 'Descripción de prueba',
+    ]);
+    $this->assertCount(0, $node->validate());
+  }
+}
+```
+
+```bash
+composer test
+# ❌ FAIL esperado: el content type "campaign" no existe todavía
+```
+
+### 3. Crear configuración (TDD — green, máx. 3 intentos)
 
 **node.type.NOMBRE.yml**:
 ```yaml
@@ -98,7 +146,9 @@ settings:
   rows: 5
 ```
 
-### 3. Crear template Twig
+**Límite de intentos**: cada `composer test` (ejecutando el test Kernel del paso anterior) cuenta como un intento. Máximo **3**. Si tras el intento 3 el test sigue en rojo: **detener**, generar el "Resumen de bloqueo" (ver [agents/tdd-specialist.md](.claude/agents/tdd-specialist.md#template-resumen-de-bloqueo-3-intentos-sin-verde)), registrarlo en `docs/activity-log/` y esperar indicación del usuario.
+
+### 4. Crear template Twig
 
 **templates/node--TIPO.html.twig**:
 ```twig
@@ -123,7 +173,7 @@ settings:
 </article>
 ```
 
-### 4. Crear vistas (opcional)
+### 5. Crear vistas (opcional)
 
 Si `--with-views`:
 
@@ -277,7 +327,7 @@ display:
         weight: 0
 ```
 
-### 5. Configuración de campos (schema)
+### 6. Configuración de campos (schema)
 
 **config/schema/MODULO.schema.yml**:
 ```yaml
@@ -301,7 +351,7 @@ field.field.node.campaign.campo_nombre:
       label: 'Settings'
 ```
 
-### 6. Validar y exportar
+### 7. Validar y exportar
 
 ```bash
 # 1. Crear el content type en UI admin
@@ -311,9 +361,10 @@ drush config:export
 
 # 4. Mover a web/modules/custom/MODULO/config/install/
 
-# 5. Validar
+# 5. Validar (incluye el test Kernel del paso 2, ahora en verde)
 composer lint:phpcs
 composer lint:phpstan
+composer test
 
 # 6. Commit
 git add web/modules/custom/MODULO/config/
@@ -425,13 +476,14 @@ settings:
 
 - [ ] Nombre y machine_name definidos
 - [ ] Campos identificados (tipos, cardinality)
-- [ ] node.type.NOMBRE.yml creado
+- [ ] Test Kernel escrito y fallando primero (red)
+- [ ] node.type.NOMBRE.yml creado (green, máx. 3 intentos)
 - [ ] field.storage.* creados para campos custom
 - [ ] field.field.* creados para campos custom
 - [ ] templates/node--TIPO.html.twig creado
 - [ ] config/schema/ definido
 - [ ] (Opcional) views creadas
-- [ ] Validaciones pasando
+- [ ] Validaciones pasando (incluye composer test en verde)
 - [ ] Documentación en README
 
 ## Referencias

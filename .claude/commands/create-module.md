@@ -5,7 +5,7 @@
 ## Entrada
 
 ```
-/skill:create-module "nombre_del_modulo" [--description="descripción"] [--api-only] [--with-tests]
+/create-module "nombre_del_modulo" [--description="descripción"] [--api-only] [--with-tests]
 ```
 
 ## Salida esperada
@@ -60,33 +60,9 @@ core_version_requirement: '^11.0'
 #   - drupal:webform
 ```
 
-### 4. Crear namespace y autoload
+### 4. Diseñar y escribir tests (TDD — red)
 
-Estructura esperada:
-
-```php
-// src/Service/MyModuleService.php
-namespace Drupal\nombre_del_modulo\Service;
-
-class MyModuleService {
-  public function __construct() {}
-}
-```
-
-La autoload viene de:
-```json
-{
-  "autoload": {
-    "psr-4": {
-      "Drupal\\nombre_del_modulo\\": "src/"
-    }
-  }
-}
-```
-
-Composer ya lo define en el proyecto raíz.
-
-### 5. Crear tests
+**Antes de crear cualquier clase de producción**, el TDD Specialist diseña los casos de prueba y escribe los tests. `composer test` debe **fallar** porque las clases todavía no existen.
 
 **Unit tests** (lógica pura):
 ```php
@@ -122,6 +98,47 @@ class MyModuleTest extends BrowserTestBase {
   }
 }
 ```
+
+```bash
+composer test
+# ❌ FAIL esperado: Class "Drupal\nombre_del_modulo\Service\MyModuleService" not found
+```
+
+### 5. Implementar hasta verde (TDD — green, máx. 3 intentos)
+
+Crear el namespace, autoload y las clases con el código **mínimo** necesario para que los tests del paso anterior pasen.
+
+```php
+// src/Service/MyModuleService.php
+namespace Drupal\nombre_del_modulo\Service;
+
+class MyModuleService {
+  public function __construct() {}
+}
+```
+
+La autoload viene de:
+```json
+{
+  "autoload": {
+    "psr-4": {
+      "Drupal\\nombre_del_modulo\\": "src/"
+    }
+  }
+}
+```
+
+Composer ya lo define en el proyecto raíz.
+
+**Límite de intentos**: cada ejecución de `composer test` tras un cambio de implementación cuenta como un intento. Máximo **3**.
+
+| Intento | Acción |
+|---|---|
+| 1 | Implementar lo mínimo y ejecutar `composer test` |
+| 2 | Ajustar según el error del intento 1 y re-ejecutar |
+| 3 | Último ajuste y re-ejecutar |
+
+Si tras el intento 3 los tests siguen en rojo: **detener** (no hacer un 4to intento), generar el "Resumen de bloqueo" (ver [agents/tdd-specialist.md](.claude/agents/tdd-specialist.md#template-resumen-de-bloqueo-3-intentos-sin-verde)), registrarlo en `docs/activity-log/` y esperar indicación del usuario.
 
 ### 6. Crear documentación
 
@@ -206,20 +223,7 @@ type: module
 core_version_requirement: '^11.0'
 EOF
 
-# 3. Crear Service básico
-cat > web/modules/custom/mi_modulo/src/Service/MiServicio.php <<EOF
-<?php
-
-namespace Drupal\mi_modulo\Service;
-
-class MiServicio {
-  public function doSomething() {
-    return 'hecho';
-  }
-}
-EOF
-
-# 4. Crear test
+# 3. Crear test (red) — falla porque MiServicio no existe
 mkdir -p web/modules/custom/mi_modulo/tests/src/Unit
 cat > web/modules/custom/mi_modulo/tests/src/Unit/MiServicioTest.php <<EOF
 <?php
@@ -233,6 +237,22 @@ class MiServicioTest extends TestCase {
   public function testServicio() {
     \$service = new MiServicio();
     \$this->assertEquals('hecho', \$service->doSomething());
+  }
+}
+EOF
+
+composer test
+# ❌ FAIL esperado: Class "Drupal\mi_modulo\Service\MiServicio" not found
+
+# 4. Crear Service básico (green) — hace pasar el test (intento 1 de 3)
+cat > web/modules/custom/mi_modulo/src/Service/MiServicio.php <<EOF
+<?php
+
+namespace Drupal\mi_modulo\Service;
+
+class MiServicio {
+  public function doSomething() {
+    return 'hecho';
   }
 }
 EOF
@@ -320,9 +340,9 @@ class MyConfig extends ConfigEntityBase {
 - [ ] Nombre validado (snake_case, no colisiones)
 - [ ] Directorio creado en web/modules/custom
 - [ ] .info.yml completo y válido
-- [ ] src/ con estructura PSR-4
+- [ ] tests/src/Unit/ (y Functional si aplica) escritos y fallando primero (red)
+- [ ] src/ con estructura PSR-4 — implementado hasta pasar los tests (green, máx. 3 intentos)
 - [ ] README.md con instrucciones
-- [ ] tests/src/Unit/ con al menos 1 test
 - [ ] Pasó composer lint:phpcs
 - [ ] Pasó composer lint:phpstan
 - [ ] Pasó composer test (70%+ coverage)
@@ -331,8 +351,8 @@ class MyConfig extends ConfigEntityBase {
 
 ## Próximos pasos
 
-1. Agregar features según requisito
-2. Escribir tests para cada feature
+1. Para cada feature nueva: escribir tests primero (red)
+2. Implementar hasta pasar los tests (green, máx. 3 intentos; si no, generar resumen de bloqueo)
 3. Validar con composer qa
 4. Actualizar documentación
 5. Commit y PR

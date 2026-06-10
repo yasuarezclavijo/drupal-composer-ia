@@ -1,5 +1,5 @@
 {
-    "name": "yeison/drupal-agentic-blueprint",
+    "name": "kdb/drupal-agentic-blueprint",
     "description": "Reutilizable blueprint para proyectos Drupal CMS 2.0 con arquitectura multiagente y calidad de código determinística optimizada para Claude Code.",
     "type": "library",
     "version": "1.0.0",

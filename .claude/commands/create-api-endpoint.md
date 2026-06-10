@@ -5,7 +5,7 @@
 ## Entrada
 
 ```
-/skill:create-api-endpoint "endpoint_name" --method="GET|POST" --resource="resource_type" --returns="json|xml"
+/create-api-endpoint "endpoint_name" --method="GET|POST" --resource="resource_type" --returns="json|xml"
 ```
 
 ## Salida esperada
@@ -27,7 +27,66 @@ web/modules/custom/MODULO/
 
 ## Ejemplo: GET /api/campaigns
 
-### 1. Crear la clase Resource
+### 1. Diseñar y escribir test funcional (TDD — red)
+
+Antes de crear la clase Resource, el TDD Specialist escribe el test funcional. `composer test` debe **fallar** (la ruta `/api/campaigns` aún no existe → 404).
+
+```php
+// tests/src/Functional/CampaignsResourceTest.php
+namespace Drupal\Tests\campaigns\Functional;
+
+use Drupal\Tests\rest\Functional\ResourceTestBase;
+use Drupal\node\Entity\Node;
+
+class CampaignsResourceTest extends ResourceTestBase {
+  
+  protected $defaultTheme = 'stark';
+  protected static $modules = ['rest', 'campaigns'];
+  protected $resourceConfigId = 'campaigns';
+
+  protected function setUp(): void {
+    parent::setUp();
+    
+    // Create test campaign
+    Node::create([
+      'type' => 'campaign',
+      'title' => 'Test Campaign',
+      'body' => 'Test description',
+      'status' => 1,
+    ])->save();
+  }
+
+  public function testGetCampaigns() {
+    $url = $this->baseUrl . '/api/campaigns';
+    $response = $this->httpClient->request('GET', $url);
+    
+    $this->assertEquals(200, $response->getStatusCode());
+    
+    $data = json_decode($response->getBody(), true);
+    $this->assertIsArray($data);
+    $this->assertGreaterThan(0, count($data));
+    $this->assertEquals('Test Campaign', $data[0]['title']);
+  }
+
+  public function testGetCampaignsUnauthorized() {
+    // Test sin autenticación
+    $url = $this->baseUrl . '/api/campaigns';
+    $response = $this->httpClient->request('GET', $url);
+    
+    // Si se requiere auth
+    // $this->assertEquals(403, $response->getStatusCode());
+  }
+}
+```
+
+```bash
+composer test
+# ❌ FAIL esperado: 404 Not Found en /api/campaigns (el resource no existe todavía)
+```
+
+### 2. Crear la clase Resource y configurar REST resource (TDD — green, máx. 3 intentos)
+
+Implementar la clase Resource y su configuración con lo mínimo necesario para que el test funcional del paso anterior pase.
 
 ```php
 // src/Plugin/rest/resource/CampaignsResource.php
@@ -104,8 +163,6 @@ class CampaignsResource extends ResourceBase {
 }
 ```
 
-### 2. Configurar REST resource
-
 **config/install/rest.resource.campaigns.yml**:
 ```yaml
 langcode: en
@@ -126,57 +183,9 @@ configuration:
     - basic_auth
 ```
 
-### 3. Crear test funcional
+**Límite de intentos**: cada `composer test` cuenta como un intento. Máximo **3**. Si tras el intento 3 el test funcional sigue en rojo: **detener** (no hacer un 4to intento), generar el "Resumen de bloqueo" (ver [agents/tdd-specialist.md](.claude/agents/tdd-specialist.md#template-resumen-de-bloqueo-3-intentos-sin-verde)), registrarlo en `docs/activity-log/` y esperar indicación del usuario.
 
-```php
-// tests/src/Functional/CampaignsResourceTest.php
-namespace Drupal\Tests\campaigns\Functional;
-
-use Drupal\Tests\rest\Functional\ResourceTestBase;
-use Drupal\node\Entity\Node;
-
-class CampaignsResourceTest extends ResourceTestBase {
-  
-  protected $defaultTheme = 'stark';
-  protected static $modules = ['rest', 'campaigns'];
-  protected $resourceConfigId = 'campaigns';
-
-  protected function setUp(): void {
-    parent::setUp();
-    
-    // Create test campaign
-    Node::create([
-      'type' => 'campaign',
-      'title' => 'Test Campaign',
-      'body' => 'Test description',
-      'status' => 1,
-    ])->save();
-  }
-
-  public function testGetCampaigns() {
-    $url = $this->baseUrl . '/api/campaigns';
-    $response = $this->httpClient->request('GET', $url);
-    
-    $this->assertEquals(200, $response->getStatusCode());
-    
-    $data = json_decode($response->getBody(), true);
-    $this->assertIsArray($data);
-    $this->assertGreaterThan(0, count($data));
-    $this->assertEquals('Test Campaign', $data[0]['title']);
-  }
-
-  public function testGetCampaignsUnauthorized() {
-    // Test sin autenticación
-    $url = $this->baseUrl . '/api/campaigns';
-    $response = $this->httpClient->request('GET', $url);
-    
-    // Si se requiere auth
-    // $this->assertEquals(403, $response->getStatusCode());
-  }
-}
-```
-
-### 4. Documentación
+### 3. Documentación
 
 En README.md agregar:
 ```markdown
@@ -284,15 +293,16 @@ public function delete($id) {
 
 ## Checklist
 
-- [ ] Clase Resource creada con @RestResource
+- [ ] Test funcional escrito y fallando primero (red)
+- [ ] Clase Resource creada con @RestResource (green, máx. 3 intentos)
+- [ ] Configuración rest.resource.*.yml
 - [ ] Métodos implementados (GET, POST, etc.)
 - [ ] Validación de permisos (AccessDeniedHttpException)
 - [ ] Input validado (BadRequestHttpException)
 - [ ] Response con formato correcto (JSON)
-- [ ] Tests funcionales creando/deletando
+- [ ] composer test en verde
 - [ ] Security Review completado
 - [ ] Documentación en README
-- [ ] Configuración rest.resource.*.yml
 
 ## Referencias
 
