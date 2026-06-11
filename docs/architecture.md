@@ -20,7 +20,7 @@ Git Push
 [Pre-commit hooks via GrumPHP]
    ├─ composer validation
    ├─ PHP syntax lint
-   ├─ PHPCS (PSR12)
+   ├─ PHPCS (Drupal + DrupalPractice)
    ├─ Debug code detection
    ├─ Merge conflict detection
    └─ Commit message format
@@ -166,6 +166,30 @@ Cada archivo documenta: requisito original → descomposición → agentes invol
 Esto convierte la capacidad "Generar documentación de decisiones" del Coordinador en un artefacto persistente y versionado en Git, navegable entre sesiones de Claude Code.
 
 Ver [agents/coordinator.md](../agents/coordinator.md#registro-de-actividad-activity-log) y [docs/activity-log/README.md](activity-log/README.md).
+
+### 7. Dependencia implícita del perfil `standard`
+
+Cualquier sitio Drupal 11 instalado con el perfil `standard` (el perfil por
+defecto de Drupal core, usado también por Drupal CMS) ya define globalmente
+algunas configuraciones de campo (p.ej. `field.storage.node.body`, usado por
+los content types `page` y `article` del propio perfil).
+
+Cualquier módulo custom que declare un content type con un campo `body` y
+exporte `config/install/field.storage.node.body.yml` fallará al habilitarse:
+
+```
+Configuration objects (field.storage.node.body) provided by <módulo>
+already exist in active configuration
+```
+
+**Regla**: si un content type custom usa el campo `body`, el módulo debe
+incluir únicamente `field.field.node.<bundle>.body.yml` (la instancia del
+campo para ese bundle), referenciando `field.storage.node.body` en
+`dependencies.config` **sin** exportar el `field.storage.node.body.yml`
+correspondiente — ese storage ya existe en la configuración activa
+provista por `standard`.
+
+Esta regla aplica al skill [create-content-type](../.claude/commands/create-content-type.md#3-crear-configuración-tdd--green-máx-3-intentos).
 
 ## Flujo de desarrollo recomendado
 
@@ -317,7 +341,7 @@ Merge
   ↓
 composer lint:phpcs
   ├─ Valida sintaxis
-  ├─ Valida estilo PSR12
+  ├─ Valida estilo Drupal/DrupalPractice
   └─ Fail if violations
   ↓
 composer lint:phpstan

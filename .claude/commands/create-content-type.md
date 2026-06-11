@@ -53,8 +53,13 @@ namespace Drupal\Tests\campaigns\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\Entity\Node;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
-class CampaignContentTypeTest extends KernelTestBase {
+// Drupal 11.3+ marca KernelTestBase sin #[RunTestsInSeparateProcesses]
+// como deprecated (será excepción en Drupal 12). Incluir siempre en
+// tests Kernel nuevos.
+#[RunTestsInSeparateProcesses]
+final class CampaignContentTypeTest extends KernelTestBase {
 
   protected static $modules = ['system', 'user', 'field', 'text', 'datetime', 'node', 'campaigns'];
 
@@ -121,6 +126,19 @@ type: text_long
 cardinality: 1
 settings: {}
 ```
+
+> ⚠️ **Excepción: campo `body`**. El perfil `standard` (perfil por defecto de
+> Drupal core, usado también por Drupal CMS) ya provee `field.storage.node.body`
+> globalmente. Si el content type
+> usa el campo `body` (muy común), **NO** generar
+> `config/install/field.storage.node.body.yml` — el módulo fallaría al
+> habilitarse con:
+> `Configuration objects (field.storage.node.body) provided by <módulo>
+> already exist in active configuration`.
+> En ese caso, crear **solo** `field.field.node.<bundle>.body.yml`,
+> referenciando el storage global existente (`field.storage.node.body` en
+> `dependencies.config`, sin incluir su `.yml` en `config/install/`). Ver
+> [docs/architecture.md](../../docs/architecture.md#dependencia-implícita-del-perfil-standard).
 
 **field.field.node.TIPO.CAMPO.yml** (instancia de campo):
 ```yaml
@@ -478,7 +496,7 @@ settings:
 - [ ] Campos identificados (tipos, cardinality)
 - [ ] Test Kernel escrito y fallando primero (red)
 - [ ] node.type.NOMBRE.yml creado (green, máx. 3 intentos)
-- [ ] field.storage.* creados para campos custom
+- [ ] field.storage.* creados para campos custom (si el campo es `body`, NO incluir field.storage.node.body.yml — ver nota en paso 3)
 - [ ] field.field.* creados para campos custom
 - [ ] templates/node--TIPO.html.twig creado
 - [ ] config/schema/ definido

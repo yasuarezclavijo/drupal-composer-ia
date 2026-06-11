@@ -241,7 +241,7 @@ composer test
 
 ## Estructura de carpetas esperada
 
-El blueprint asume que tu Drupal CMS tiene:
+El blueprint asume que tu proyecto Drupal tiene:
 
 ```
 proyecto/

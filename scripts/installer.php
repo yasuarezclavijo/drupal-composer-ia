@@ -7,9 +7,12 @@
  *   - Agentes Claude Code (.claude/agents/)
  *   - Slash commands Claude Code (.claude/commands/)
  *   - CLAUDE.md con instrucciones del proyecto
- *   - Quality gates: PHPCS, PHPStan, GrumPHP
+ *   - Quality gates: PHPCS (Drupal/DrupalPractice), PHPStan, GrumPHP
  *   - Scripts wrapper compatibles con DDEV
- *   - Merge de require-dev y scripts en composer.json del proyecto
+ *   - phpunit.xml + web/sites/simpletest/browser_output/
+ *   - Comando DDEV `test-coverage` (cobertura vía Xdebug)
+ *   - Merge de require (drush/drush), require-dev, scripts y config
+ *     (use-github-api) en composer.json del proyecto
  *   - Docs de referencia (architecture, quality-gates, activity-log)
  *
  * Usage (auto-run via post-install-cmd):
@@ -27,7 +30,21 @@ class BlueprintInstaller {
   private string $project_root;
   private string $blueprint_root;
 
-  /** Dependencias dev que el stack determinístico necesita */
+  /** Dependencias de producción que el proyecto Drupal necesita */
+  private array $require = [
+    'drush/drush' => '^13.7',
+  ];
+
+  /**
+   * Dependencias dev que el stack determinístico necesita.
+   *
+   * No se requiere drupal/core-dev: drupal/core-dev ^11.3 exige
+   * drupal/coder ^8.3.30, lo que entra en conflicto irresoluble con
+   * drupal/coder ^9.0 (PHPCS 4.x) usado por este blueprint. En su lugar se
+   * listan aquí, de forma explícita, los paquetes que drupal/core-dev
+   * aportaría para que PHPUnit (Kernel/Functional/FunctionalJavascript)
+   * funcione out-of-the-box.
+   */
   private array $require_dev = [
     'drupal/coder'              => '^9.0',
     'mglaman/phpstan-drupal'    => '^2.0',
@@ -35,16 +52,57 @@ class BlueprintInstaller {
     'phpstan/phpstan'           => '^2.1',
     'squizlabs/php_codesniffer' => '^4.0',
     'friendsoftwig/twigcs'      => '^6.6',
+
+    // --- Sustitutos de drupal/core-dev (ver docblock arriba) ---
+    'behat/mink'                     => '^1.11',
+    'behat/mink-browserkit-driver'   => '^2.2',
+    'colinodell/psr-testlogger'      => '^1.2',
+    'composer/composer'              => '^2.8.1',
+    'justinrainbow/json-schema'      => '^5.2 || ^6.5.2',
+    'lullabot/mink-selenium2-driver' => '^1.7.3',
+    'lullabot/php-webdriver'         => '^2.0.7',
+    'micheh/phpcs-gitlab'            => '^1.1 || ^2.0',
+    'mikey179/vfsstream'             => '^1.6.11',
+    'open-telemetry/exporter-otlp'   => '^1',
+    'open-telemetry/sdk'             => '^1',
+    'php-http/guzzle7-adapter'       => '^1.0',
+    'phpspec/prophecy'               => '^1.23',
+    'phpspec/prophecy-phpunit'       => '^2',
+    'phpstan/phpstan-phpunit'        => '^1.4.2 || ^2.0.7',
+    'phpunit/phpunit'                => '^11.5.50',
+    'symfony/browser-kit'            => '^7.4',
+    'symfony/css-selector'           => '^7.4',
+    'symfony/dom-crawler'            => '^7.4.12',
+    'symfony/error-handler'          => '^7.4',
+    'symfony/lock'                   => '^7.4',
+    'symfony/var-dumper'             => '^7.4',
   ];
 
   /** Scripts Composer que el proyecto destino necesita */
   private array $composer_scripts = [
-    'qa'          => ['@lint:phpcs', '@lint:phpstan'],
-    'test'        => 'vendor/bin/phpunit --coverage-text',
-    'fix'         => 'vendor/bin/phpcbf --standard=phpcs.xml',
-    'lint:phpcs'  => '@php scripts/lint-php.sh',
-    'lint:phpstan'=> '@php scripts/phpstan-wrapper.sh',
-    'audit'       => 'composer audit',
+    'qa'            => ['@lint:phpcs', '@lint:phpstan'],
+    'test'          => 'vendor/bin/phpunit',
+    'test:coverage' => 'XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=coverage --coverage-text',
+    'fix'           => 'vendor/bin/phpcbf --standard=phpcs.xml',
+    'lint:phpcs'    => 'bash scripts/lint-php.sh',
+    'lint:phpstan'  => 'bash scripts/phpstan-wrapper.sh',
+    'audit'         => 'composer audit',
+  ];
+
+  /**
+   * Scripts rotos en versiones previas del blueprint que deben corregirse
+   * en composer.json del proyecto destino aunque ya existan (ver
+   * `fix_broken_scripts()`).
+   *
+   * Mapa: nombre de script => [valor_roto_anterior => valor_corregido].
+   */
+  private array $broken_scripts_fixes = [
+    'lint:phpcs' => [
+      '@php scripts/lint-php.sh' => 'bash scripts/lint-php.sh',
+    ],
+    'lint:phpstan' => [
+      '@php scripts/phpstan-wrapper.sh' => 'bash scripts/phpstan-wrapper.sh',
+    ],
   ];
 
   /** Scripts wrapper a copiar al proyecto (excluye installer.php) */
@@ -86,6 +144,9 @@ class BlueprintInstaller {
     $this->copy_wrapper_scripts(force: false);
     $this->copy_docs();
     $this->ensure_drupal_dirs();
+    $this->ensure_test_dirs();
+    $this->ensure_phpunit_config();
+    $this->copy_ddev_coverage_command(force: false);
     $this->merge_composer_json();
 
     $this->success('Blueprint installed!');
@@ -108,6 +169,9 @@ class BlueprintInstaller {
     $this->copy_wrapper_scripts(force: true);
     // CLAUDE.md y docs NO se sobreescriben (pueden tener customizaciones)
     $this->copy_docs(skip_existing: true);
+    $this->ensure_test_dirs();
+    $this->ensure_phpunit_config();
+    $this->copy_ddev_coverage_command(force: true);
     $this->merge_composer_json();
 
     $this->success('Blueprint updated!');
@@ -191,10 +255,104 @@ class BlueprintInstaller {
     }
   }
 
+  /**
+   * Crea web/sites/simpletest/browser_output/, requerido por
+   * Drupal\TestTools\Extension\HtmlLogging\HtmlOutputLogger (phpunit.xml).
+   * Sin este directorio, `composer test` falla con error de "no writable".
+   */
+  private function ensure_test_dirs(): void {
+    $dir = $this->project_root . '/web/sites/simpletest/browser_output';
+    if (!is_dir($dir)) {
+      mkdir($dir, 0755, true);
+    }
+
+    $gitkeep = $dir . '/.gitkeep';
+    if (!file_exists($gitkeep)) {
+      touch($gitkeep);
+      echo "✓ Created web/sites/simpletest/browser_output/.gitkeep\n";
+    }
+  }
+
+  /**
+   * Copia phpunit.xml a la raíz del proyecto (basado en
+   * web/core/phpunit.xml.dist), sustituyendo el placeholder
+   * __SIMPLETEST_BASE_URL__ por la URL DDEV detectada (o un fallback).
+   * No sobreescribe un phpunit.xml existente (puede tener customizaciones).
+   */
+  private function ensure_phpunit_config(): void {
+    $dest = $this->project_root . '/phpunit.xml';
+    if (file_exists($dest)) {
+      echo "⊘ phpunit.xml already exists — skipped\n";
+      return;
+    }
+
+    $src = $this->blueprint_root . '/quality/phpunit.xml.dist';
+    if (!file_exists($src)) {
+      return;
+    }
+
+    $contents = file_get_contents($src);
+    $contents = str_replace('__SIMPLETEST_BASE_URL__', $this->detect_ddev_base_url(), $contents);
+
+    file_put_contents($dest, $contents);
+    echo "✓ Copied phpunit.xml\n";
+  }
+
+  /**
+   * Detecta la URL base de DDEV a partir de .ddev/config.yaml (campo
+   * `name:`). Si no hay DDEV, retorna un fallback genérico que el usuario
+   * deberá ajustar manualmente en phpunit.xml.
+   */
+  private function detect_ddev_base_url(): string {
+    $ddev_config = $this->project_root . '/.ddev/config.yaml';
+    if (file_exists($ddev_config)) {
+      $contents = file_get_contents($ddev_config);
+      if (preg_match('/^name:\s*(\S+)/m', $contents, $matches)) {
+        return 'https://' . trim($matches[1]) . '.ddev.site';
+      }
+      return 'https://default.ddev.site';
+    }
+
+    return 'http://localhost';
+  }
+
+  /**
+   * Copia el comando custom de DDEV `test-coverage` (cobertura vía Xdebug)
+   * a .ddev/commands/web/. Solo aplica si el proyecto usa DDEV.
+   */
+  private function copy_ddev_coverage_command(bool $force): void {
+    if (!file_exists($this->project_root . '/.ddev/config.yaml')) {
+      return;
+    }
+
+    $this->copy_single(
+      'templates/ddev-test-coverage',
+      '/.ddev/commands/web/test-coverage',
+      skip_existing: !$force
+    );
+
+    $dest = $this->project_root . '/.ddev/commands/web/test-coverage';
+    if (file_exists($dest)) {
+      chmod($dest, 0755);
+    }
+  }
+
   private function merge_composer_json(): void {
     $path = $this->project_root . '/composer.json';
     $json = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
     $changed = false;
+
+    // --- require ---
+    $json['require'] ??= [];
+    foreach ($this->require as $package => $version) {
+      if (!isset($json['require'][$package])) {
+        $json['require'][$package] = $version;
+        echo "✓ Added require: {$package}:{$version}\n";
+        $changed = true;
+      } else {
+        echo "⊘ require {$package} already present — skipped\n";
+      }
+    }
 
     // --- require-dev ---
     $json['require-dev'] ??= [];
@@ -218,6 +376,28 @@ class BlueprintInstaller {
       } else {
         echo "⊘ script '{$name}' already present — skipped\n";
       }
+    }
+
+    // --- fix scripts rotos de versiones previas (composer qa no-op) ---
+    foreach ($this->broken_scripts_fixes as $name => $fixes) {
+      $current = $json['scripts'][$name] ?? null;
+      if (is_string($current) && isset($fixes[$current])) {
+        $json['scripts'][$name] = $fixes[$current];
+        echo "↺ Fixed broken script '{$name}': {$current} → {$fixes[$current]}\n";
+        $changed = true;
+      }
+    }
+
+    // --- config ---
+    $json['config'] ??= [];
+    if (!array_key_exists('use-github-api', $json['config'])) {
+      // Evita "Could not authenticate against github.com" por rate-limit
+      // anónimo de la API de GitHub al resolver el repositorio VCS propio.
+      $json['config']['use-github-api'] = false;
+      echo "✓ Added config: use-github-api=false\n";
+      $changed = true;
+    } else {
+      echo "⊘ config.use-github-api already present — skipped\n";
     }
 
     if ($changed) {
@@ -320,20 +500,28 @@ class BlueprintInstaller {
     }
 
     echo "  2. Verificar quality gates:\n";
-    echo "     composer qa        # PHPCS + PHPStan\n";
-    echo "     composer test      # PHPUnit + coverage\n";
+    echo "     composer qa        # PHPCS (Drupal/DrupalPractice) + PHPStan\n";
+    echo "     composer test      # PHPUnit (sin cobertura)\n";
     echo "     composer audit     # Dependencias vulnerables\n\n";
 
-    echo "  3. Abrir Claude Code (terminal en raíz del proyecto):\n";
+    echo "  3. Revisar phpunit.xml:\n";
+    echo "     Si no usas DDEV, ajusta SIMPLETEST_BASE_URL y SIMPLETEST_DB.\n\n";
+
+    echo "  4. Cobertura de código (requiere Xdebug, no pcov):\n";
+    echo "     ddev xdebug on\n";
+    echo "     ddev exec \"XDEBUG_MODE=coverage composer test:coverage\"\n";
+    echo "     (ddev composer ... fuerza XDEBUG_MODE=off; usar ddev exec)\n\n";
+
+    echo "  5. Abrir Claude Code (terminal en raíz del proyecto):\n";
     echo "     claude\n";
     echo "     Presiona ← para ver los 6 agentes disponibles.\n\n";
 
-    echo "  4. Slash commands disponibles:\n";
+    echo "  6. Slash commands disponibles:\n";
     echo "     /create-module\n";
     echo "     /create-content-type\n";
     echo "     /create-api-endpoint\n\n";
 
-    echo "  5. Primera tarea con el coordinador:\n";
+    echo "  7. Primera tarea con el coordinador:\n";
     echo "     @coordinator implementar sistema de notificaciones\n\n";
   }
 }

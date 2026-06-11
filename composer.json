@@ -1,6 +1,6 @@
 {
     "name": "kdb/drupal-agentic-blueprint",
-    "description": "Reutilizable blueprint para proyectos Drupal CMS 2.0 con arquitectura multiagente y calidad de código determinística optimizada para Claude Code.",
+    "description": "Reutilizable blueprint para proyectos Drupal 11 (incluye Drupal CMS) con arquitectura multiagente y calidad de código determinística optimizada para Claude Code.",
     "type": "composer-plugin",
     "version": "1.0.0",
     "license": "MIT",

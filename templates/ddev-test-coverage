@@ -1,0 +1,14 @@
+#!/bin/bash
+
+## Description: Ejecutar PHPUnit con cobertura de código (Xdebug)
+## Usage: test-coverage
+## Example: "ddev test-coverage"
+## ExecRaw: true
+
+# pcov no está disponible en la imagen webimage de DDEV (sin
+# install-php-extensions). Se usa Xdebug en modo "coverage" explícito,
+# ya que `ddev composer <script>` fuerza internamente XDEBUG_MODE=off.
+
+set -euo pipefail
+
+XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=coverage --coverage-text "$@"

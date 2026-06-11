@@ -1,6 +1,6 @@
 # Drupal Agentic Blueprint v1
 
-Blueprint reutilizable para proyectos Drupal CMS 2.0 con arquitectura multiagente, calidad de código determinística y convenciones optimizadas para Claude Code.
+Blueprint reutilizable para proyectos Drupal 11 (incluye Drupal CMS) con arquitectura multiagente, calidad de código determinística y convenciones optimizadas para Claude Code.
 
 ## ¿Qué incluye?
 
@@ -16,7 +16,7 @@ Blueprint reutilizable para proyectos Drupal CMS 2.0 con arquitectura multiagent
 composer require kdb/drupal-agentic-blueprint
 ```
 
-El blueprint se instalará automáticamente en la raíz de tu proyecto Drupal CMS 2.0.
+El blueprint se instalará automáticamente en la raíz de tu proyecto Drupal 11.
 
 ## Instalación interactiva
 

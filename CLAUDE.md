@@ -1,4 +1,4 @@
-# Configuración Claude Code — Drupal CMS 2.0
+# Configuración Claude Code — Drupal 11
 
 ## Proyecto
 
@@ -12,9 +12,15 @@ Directorios de código custom:
 
 ## Comandos esenciales
 
+> **Detección de DDEV**: si existe `.ddev/config.yaml` en la raíz del proyecto y el
+> binario `ddev` está disponible, anteponer `ddev` a TODOS los comandos `composer` y
+> `drush` de abajo (ej. `ddev composer qa`, `ddev drush cr`). Si no existe `.ddev/`,
+> ejecutarlos directos tal como están.
+
 ```bash
-composer qa            # PHPCS + PHPStan (correr antes de cualquier commit)
-composer test          # PHPUnit con coverage (mínimo 70%)
+composer qa            # PHPCS (Drupal/DrupalPractice) + PHPStan (correr antes de cualquier commit)
+composer test          # PHPUnit (sin cobertura)
+composer test:coverage # PHPUnit + cobertura (mínimo 70%, requiere Xdebug — ver abajo)
 composer fix           # Auto-fijar PHPCS
 composer lint:phpcs    # Solo PHPCS
 composer lint:phpstan  # Solo PHPStan (nivel 5)
@@ -24,6 +30,23 @@ ddev start             # Levantar entorno DDEV
 ddev drush cr          # Limpiar caches Drupal
 ddev drush updb        # Correr updates de DB
 ```
+
+> **Cobertura de código**: la imagen `webimage` de DDEV no incluye `pcov`
+> (no se puede instalar vía `install-php-extensions`). Usar Xdebug:
+>
+> ```bash
+> ddev xdebug on
+> ddev exec "XDEBUG_MODE=coverage composer test:coverage"
+> ```
+>
+> `ddev composer ...` fuerza internamente `XDEBUG_MODE=off`, por lo que
+> `ddev composer test:coverage` **no** generará cobertura — usar siempre
+> `ddev exec` (o el comando `ddev test-coverage` si está disponible).
+
+> **Drush 13**: comandos como `drush block:create` (de Drush 8/9) ya NO
+> existen. Para crear entidades por código (bloques, etc.) usar
+> `drush php:eval` con la API de entidades, p.ej.:
+> `drush php:eval "\Drupal\block\Entity\Block::create([...])->save();"`
 
 ## Agentes disponibles
 

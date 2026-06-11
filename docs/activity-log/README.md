@@ -22,7 +22,7 @@ docs/activity-log/YYYY-MM-DD-<slug-del-requisito>.md
 
 | Fecha | Tarea | Estado | Archivo |
 |---|---|---|---|
-| — | _Aún no hay tareas registradas_ | — | — |
+| 2026-06-10 | Fix quality gates + estándares Drupal/DrupalPractice | ✅ Completado | [2026-06-10-fix-quality-gates-drupal-standards.md](2026-06-10-fix-quality-gates-drupal-standards.md) |
 
 ## Plantilla
 

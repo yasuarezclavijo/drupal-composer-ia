@@ -13,13 +13,33 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.
 - **TDD Specialist**: nuevo agente (`agents/tdd-specialist.md`, `/agent:tdd-specialist`) que diseña casos de prueba y escribe tests Unit/Kernel/Functional ANTES de la implementación, siguiendo el ciclo Red-Green-Refactor. El Coordinador lo invoca como segundo paso de cualquier feature o bug fix, justo después del diseño del Drupal Architect. El activity log ahora incluye una sección dedicada a esta fase.
 - **Límite de 3 intentos para la fase Green**: si tras 3 ejecuciones de `composer test` la implementación no logra ponerse en verde, el TDD Specialist y el Coordinador detienen la tarea, generan un "Resumen de bloqueo" (tests objetivo, intentos realizados, hipótesis de causa raíz, preguntas/posibles enfoques y siguiente paso) y marcan la tarea como `⛔ Bloqueado` en el activity log, a la espera de indicaciones del usuario. Plantilla en [agents/tdd-specialist.md](agents/tdd-specialist.md#template-resumen-de-bloqueo-3-intentos-sin-verde).
 - **Skills reordenados a TDD**: `skills/create-module.md`, `skills/create-content-type.md` y `skills/create-api-endpoint.md` ahora escriben primero los tests (red) y luego implementan hasta verde (green, máx. 3 intentos), reflejando el ciclo Red-Green-Refactor en cada workflow.
+- **`quality/phpunit.xml.dist`**: configuración de PHPUnit 11 para Drupal 11 (bootstrap `web/core/tests/bootstrap.php`, `HtmlOutputLogger`, `DebugDump`, testsuites unit/kernel/functional/functional-javascript y `<source>` con cobertura para `web/{modules,profiles,themes}/custom`). El installer la copia a `/phpunit.xml` en el proyecto destino, sustituyendo el placeholder `__SIMPLETEST_BASE_URL__` con la URL DDEV detectada (o `http://localhost` si no hay DDEV).
+- **Comando `ddev test-coverage`** (`templates/ddev-test-coverage`, copiado a `.ddev/commands/web/`): ejecuta `XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=coverage --coverage-text`, ya que `pcov` no está disponible en la imagen webimage de DDEV y `ddev composer <script>` fuerza `XDEBUG_MODE=off`.
+- **`docs/architecture.md`**: nueva sección "Dependencia implícita del perfil `standard`" documentando la colisión de `field.storage.node.body` cuando un módulo custom declara un content type con campo `body`.
+
+### Changed
+
+- **PHPCS: Drupal + DrupalPractice en lugar de PSR12**. `quality/phpcs.xml` ahora usa `<rule ref="Drupal"/>` y `<rule ref="DrupalPractice"/>` (de `drupal/coder`), declara `installed_paths` para resolver los sniffs, y amplía `extensions` a `php,module,inc,install,profile,theme,info,yml,js,css,txt,md` para evitar falsos positivos en archivos no-PHP.
+- **`require-dev` del blueprint**: ya no requiere `drupal/core-dev` (entra en conflicto con `drupal/coder ^9.0`, que pin a `drupal/coder ^8.3.30`). En su lugar se listan explícitamente sus paquetes de testing transitivos (`phpunit/phpunit`, `behat/mink*`, `symfony/*`, `mikey179/vfsstream`, etc.). Las namespaces `Drupal\Tests\`, `Drupal\KernelTests\`, etc. siguen funcionando porque `core/tests/bootstrap.php` las registra en runtime vía el ClassLoader de Composer.
+- **`composer.json` (dependencias)**: se agrega `drush/drush ^13.7` a `require`.
+- **Scripts de Composer**: `lint:phpcs` y `lint:phpstan` ahora invocan `bash scripts/*.sh` (antes `@php scripts/*.sh`, que ejecutaba el script bash como texto PHP y siempre retornaba éxito, dejando `composer qa` como un no-op silencioso). `test` queda como `vendor/bin/phpunit` (sin cobertura, funciona sin Xdebug/pcov) y se agrega `test:coverage` (`XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=coverage --coverage-text`) para el flujo de cobertura.
+- **`.claude/commands/create-content-type.md`**: el ejemplo de test Kernel ahora incluye `#[RunTestsInSeparateProcesses]` (requerido por Drupal 11.3+, será excepción en Drupal 12) y documenta la excepción del campo `body` (no exportar `field.storage.node.body.yml` bajo el perfil `standard`).
+- **`config.use-github-api`**: el installer fuerza `"use-github-api": false` en el `composer.json` del proyecto destino (si no está definido) para evitar rate-limiting de la API de GitHub al resolver el propio repositorio VCS del blueprint.
+
+### Fixed
+
+- **`composer qa` no-op silencioso** (CRÍTICO): los scripts `lint:phpcs`/`lint:phpstan` ejecutaban `@php scripts/*.sh`, que con scripts bash simplemente vuelca el código fuente como texto y retorna `exit 0`. Corregido a `bash scripts/*.sh`. El installer aplica este fix automáticamente a proyectos ya generados vía `composer update kdb/drupal-agentic-blueprint` (`broken_scripts_fixes`).
+- **`phpunit.xml` ausente en la raíz del proyecto**: provocaba fallo inmediato de `composer test`. El installer ahora copia `quality/phpunit.xml.dist` a `/phpunit.xml` (sin sobrescribir si ya existe).
+- **`web/sites/simpletest/browser_output` ausente**: requerido por `HtmlOutputLogger`; el installer crea el directorio con `.gitkeep`.
+- **Documentación de cobertura (Xdebug/pcov)**: `CLAUDE.md` documenta el flujo `ddev xdebug on` + `ddev exec "XDEBUG_MODE=coverage composer test:coverage"` (o `ddev test-coverage`), señalando que `ddev composer <script>` fuerza `XDEBUG_MODE=off` y por tanto no sirve para cobertura.
+- **Drush 13**: `CLAUDE.md` documenta que `drush block:create` (Drush 8/9) ya no existe en Drush 13; usar `drush php:eval` con la Entity API (`\Drupal\block\Entity\Block::create([...])->save();`).
 
 ## [1.0.0] - 2024-06-08
 
 ### Added
 
 - **Quality Gates determinísticos**
-  - PHPCS con estándar PSR12
+  - PHPCS con estándares Drupal y DrupalPractice (`drupal/coder`)
   - PHPStan análisis estático nivel 5
   - PHPUnit con cobertura mínima 70%
   - TwigCS para validación de templates

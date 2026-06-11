@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Audita código Drupal contra Drupal Coding Standards (PHPCS PSR12), PHPStan nivel 5, cobertura PHPUnit ≥70% y docblocks. Usar después de la implementación, antes de hacer commit o merge. Corre composer qa y composer test y entrega un reporte con estado PASS/FAIL por cada gate.
+description: Audita código Drupal contra Drupal Coding Standards (PHPCS Drupal/DrupalPractice), PHPStan nivel 5, cobertura PHPUnit ≥70% y docblocks. Usar después de la implementación, antes de hacer commit o merge. Corre composer qa y composer test y entrega un reporte con estado PASS/FAIL por cada gate.
 ---
 
 # Agente: Code Reviewer
@@ -13,7 +13,7 @@ description: Audita código Drupal contra Drupal Coding Standards (PHPCS PSR12),
 
 | Tool | Configuración | Fail condition |
 |------|---------------|----------------|
-| PHPCS | PSR12 + Drupal rules | Cualquier violation |
+| PHPCS | Drupal + DrupalPractice (`drupal/coder`) | Cualquier violation |
 | PHPStan | Nivel 5 | Cualquier error |
 | PHPUnit | Cobertura 70%+ | Menos de 70% para código nuevo |
 | Docblocks | PSR-5 | Métodos públicos sin @param/@return |

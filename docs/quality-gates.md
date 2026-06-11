@@ -75,7 +75,7 @@ composer lint:phpcs
 ```
 
 **Qué valida**:
-- PSR12 estándar
+- Estándares Drupal y DrupalPractice (`drupal/coder`)
 - Drupal coding conventions
 - Naming conventions
 
@@ -451,4 +451,4 @@ composer test
 - [PHPCS Rules](https://github.com/squizlabs/PHP_CodeSniffer/wiki/Annotated-ruleset.xml)
 - [PHPStan Documentation](https://phpstan.org/)
 - [PHPUnit for Drupal](https://www.drupal.org/docs/automated-testing/phpunit)
-- [PSR-12](https://www.php-fig.org/psr/psr-12/)
+- [Drupal Coding Standards](https://www.drupal.org/docs/develop/standards/coding-standards)

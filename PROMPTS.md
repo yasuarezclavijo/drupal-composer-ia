@@ -154,7 +154,7 @@ cat docs/activity-log/2026-06-10-crear-modulo-campaigns.md
 |---|---|---|
 | `composer lint:composer` | `composer.json` válido | pre-commit |
 | `composer lint:php` | Sintaxis PHP (`php -l`) | pre-commit |
-| `composer lint:phpcs` | PSR12 / Drupal coding standards | pre-commit |
+| `composer lint:phpcs` | Drupal + DrupalPractice coding standards (`drupal/coder`) | pre-commit |
 | `composer fix` | Auto-corrección PHPCBF | antes de commit |
 | `composer lint:phpstan` | Type safety nivel 5 | pre-merge |
 | `composer lint:twig` | TwigCS en templates custom | pre-commit |

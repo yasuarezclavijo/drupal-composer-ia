@@ -9,7 +9,7 @@
 ## 🎯 Objetivos cumplidos
 
 ### 1. ✅ Configurar Quality Gates determinísticos
-- [x] PHPCS con estándar PSR12
+- [x] PHPCS con estándares Drupal y DrupalPractice (`drupal/coder`)
 - [x] PHPCBF para auto-corrección
 - [x] PHPStan + PHPStan Drupal (nivel 5)
 - [x] GrumPHP como orquestador
@@ -381,7 +381,7 @@ Cobertura:
 5. **Coverage**: 70% mínimo para código nuevo
 
 ### Decisiones de arquitectura
-1. **PSR12 default** (Drupal standards via fallback)
+1. **Drupal y DrupalPractice** (`drupal/coder`, sin fallback PSR12)
 2. **Wrapper scripts** (para detección de directorios)
 3. **GrumPHP** (para orquestación de pre-commit)
 4. **Agentes especializados** (no uno-para-todo)
@@ -441,7 +441,7 @@ MIT - Libre para usar, modificar y distribuir.
 
 **Estado final**: ✅ **COMPLETADO Y LISTO PARA USAR**
 
-El blueprint está completamente funcional, documentado y listo para ser instalado en cualquier proyecto Drupal CMS 2.0.
+El blueprint está completamente funcional, documentado y listo para ser instalado en cualquier proyecto Drupal 11 (incluye Drupal CMS).
 
 ```bash
 # Para comenzar:

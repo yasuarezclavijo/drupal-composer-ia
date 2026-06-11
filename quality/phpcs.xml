@@ -1,16 +1,21 @@
 <?xml version="1.0"?>
-<ruleset name="Drupal CMS">
-    <description>PHP CodeSniffer configuration for Drupal CMS 11 custom code.</description>
+<ruleset name="Drupal Agentic Blueprint">
+    <description>PHP CodeSniffer configuration for Drupal 11 custom code.</description>
 
     <!-- Set global properties -->
     <arg name="basepath" value="."/>
     <arg name="colors"/>
     <arg name="report" value="full"/>
-    <arg name="extensions" value="inc,install,js,css,scss,module,php,profile,theme,info,yml"/>
+    <arg name="extensions" value="php,module,inc,install,profile,theme,info,yml,js,css,txt,md"/>
     <arg name="report-width" value="120"/>
 
-    <!-- Use only Drupal standards (no external dependencies) -->
-    <rule ref="PSR12"/>
+    <!-- Hace disponibles los estándares Drupal/DrupalPractice de drupal/coder.
+         Ruta relativa resuelta desde vendor/squizlabs/php_codesniffer/. -->
+    <config name="installed_paths" value="../../drupal/coder/coder_sniffer"/>
+
+    <!-- Drupal coding standards (incluye sniffs para PHP, YAML, JS y CSS) -->
+    <rule ref="Drupal"/>
+    <rule ref="DrupalPractice"/>
 
     <!-- Files to check -->
     <file>web/modules/custom</file>
