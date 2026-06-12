@@ -14,11 +14,13 @@
 web/modules/custom/nombre_del_modulo/
 ├── nombre_del_modulo.info.yml       # Metadata
 ├── nombre_del_modulo.module          # Hooks (si aplica)
+├── nombre_del_modulo.services.yml    # Registro de Services/Repositories (DI)
 ├── src/
-│   ├── Controller/
+│   ├── Controller/                   # Capa delgada: HTTP, delega en Service
 │   ├── Plugin/
-│   ├── Form/
-│   └── Service/
+│   ├── Form/                         # Capa delgada: build/validate/submit, delega en Service
+│   ├── Service/                      # Lógica de negocio
+│   └── Repository/                   # Acceso/transformación de datos (queries, load/save/delete)
 ├── config/install/
 ├── config/schema/
 ├── templates/
@@ -80,6 +82,12 @@ class MyModuleServiceTest extends TestCase {
   }
 }
 ```
+
+> Si el Service necesita acceder a entidades/DB, esa lógica NO va dentro del
+> Service: se inyecta un `Repository` (`src/Repository/`) y en el Unit test
+> se mockea (`createMock(MyModuleRepository::class)`). El Service contiene
+> solo lógica de negocio; el Repository solo acceso a datos. Ver
+> [create-api-endpoint](create-api-endpoint.md#arquitectura-de-capas-obligatoria).
 
 **Functional tests** (integración con Drupal):
 ```php
@@ -342,6 +350,7 @@ class MyConfig extends ConfigEntityBase {
 - [ ] .info.yml completo y válido
 - [ ] tests/src/Unit/ (y Functional si aplica) escritos y fallando primero (red)
 - [ ] src/ con estructura PSR-4 — implementado hasta pasar los tests (green, máx. 3 intentos)
+- [ ] Si hay Controller/Form/Resource con lógica de negocio o acceso a datos: separado en Service (negocio) + Repository (datos), registrados en `*.services.yml`
 - [ ] README.md con instrucciones
 - [ ] Pasó composer lint:phpcs
 - [ ] Pasó composer lint:phpstan

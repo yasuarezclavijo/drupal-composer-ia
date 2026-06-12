@@ -8,7 +8,9 @@ Directorios de código custom:
 - `web/modules/custom/` — módulos
 - `web/themes/custom/` — temas
 - `web/profiles/custom/` — perfiles
-- `web/modules/custom/*/src/Plugin/rest/resource/` — endpoints REST
+- `web/modules/custom/*/src/Plugin/rest/resource/` — endpoints REST (capa HTTP, sin lógica de negocio)
+- `web/modules/custom/*/src/Service/` — lógica de negocio
+- `web/modules/custom/*/src/Repository/` — acceso/transformación de datos (queries, load/save/delete)
 
 ## Comandos esenciales
 
@@ -73,7 +75,25 @@ Los agentes están en `.claude/agents/`. Usar siempre via Task tool para context
 
 - `skills/create-module.md` — crear módulo Drupal completo con tests
 - `skills/create-content-type.md` — crear content type con campos
-- `skills/create-api-endpoint.md` — crear REST endpoint con seguridad
+- `skills/create-api-endpoint.md` — crear REST endpoint con seguridad, separado en capas Resource/Service/Repository
+
+## Arquitectura por capas (no negociable)
+
+Cualquier clase que exponga una operación al exterior (REST Resource,
+Controller, Form, Drush command) debe ser una capa **delgada**: permisos,
+parseo de input, mapeo de excepciones y construcción de la respuesta. Está
+prohibido que contenga `getQuery()`, `loadMultiple()`,
+`EntityTypeManagerInterface` o reglas de validación de negocio.
+
+- **Service** (`src/Service/`): lógica de negocio, validaciones de dominio,
+  orquesta uno o varios Repository.
+- **Repository** (`src/Repository/`): único lugar con acceso a datos
+  (`getQuery()`, `load*()`, `create()`, `save()`, `delete()`).
+- Registrar ambos en `MODULO.services.yml` e inyectarlos por DI.
+
+Detalle y ejemplo completo en
+[create-api-endpoint](.claude/commands/create-api-endpoint.md#arquitectura-de-capas-obligatoria)
+y [docs/architecture.md](docs/architecture.md#6-resource-delgado--service--repository-vs-lógica-de-negocio-en-el-resource).
 
 ## Reglas de desarrollo
 

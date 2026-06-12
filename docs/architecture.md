@@ -78,7 +78,7 @@ Cada skill es un procedimiento completamente documentado:
 
 - **create-module**: Crear módulo custom con estructura completa
 - **create-content-type**: Content type con campos y vistas
-- **create-api-endpoint**: REST endpoint con tests y docs
+- **create-api-endpoint**: REST endpoint con tests y docs, separado en capas Resource (HTTP) / Service (negocio) / Repository (datos)
 - **review-pr**: Revisar pull request contra todos los gates
 
 Invocación:
@@ -125,12 +125,14 @@ Blueprint repository
 
 ```
 web/modules/custom/
-├── campaña_modulo/
-│   ├── campaña_modulo.info.yml
+├── campaign_module/
+│   ├── campaign_module.info.yml
+│   ├── campaign_module.services.yml
 │   ├── src/
 │   │   ├── Entity/Campaign.php
 │   │   ├── Controller/CampaignController.php
 │   │   ├── Service/CampaignService.php
+│   │   ├── Repository/CampaignRepository.php
 │   │   ├── Form/CampaignForm.php
 │   │   └── Plugin/rest/resource/CampaignsResource.php
 │   ├── config/install/
@@ -325,6 +327,21 @@ Merge
 **Razón**: Tests escritos después de la implementación tienden a confirmar lo que el código ya hace, no lo que debería hacer. Tests primero fuerzan a definir el contrato/comportamiento esperado y detectan errores de diseño temprano.
 
 **Agente**: [agents/tdd-specialist.md](../agents/tdd-specialist.md)
+
+### 6. Resource delgado + Service + Repository (vs. lógica de negocio en el Resource)
+
+**Decisión**: las clases `*Resource` (`src/Plugin/rest/resource/`) son una
+capa HTTP delgada (permisos, parseo, mapeo de excepciones, cache). Toda la
+lógica de negocio vive en `src/Service/` y todo el acceso/transformación de
+datos (queries, `load*()`, `create()`, `save()`, `delete()`) vive en
+`src/Repository/`.
+
+**Razón**: evita repetir el problema histórico de los `Controller` gordos
+que mezclaban acceso a datos, reglas de negocio y respuesta HTTP en una sola
+clase, lo que dificultaba testear la lógica sin levantar el framework
+completo y favorecía la duplicación entre endpoints.
+
+**Skill**: [create-api-endpoint](../.claude/commands/create-api-endpoint.md)
 
 ## Flujos de datos
 

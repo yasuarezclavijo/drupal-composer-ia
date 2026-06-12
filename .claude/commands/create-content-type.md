@@ -440,35 +440,57 @@ composer qa
 
 ### Content type con formulario personalizado
 
+Igual que un REST Resource, el `Form` es capa HTTP: construye el formulario y
+delega cualquier creación/actualización de datos en un `Service` (que a su
+vez usa un `Repository`). El `submitForm()` no debe contener
+`EntityTypeManager`, `getQuery()` ni reglas de negocio — ver
+[create-api-endpoint](create-api-endpoint.md#arquitectura-de-capas-obligatoria).
+
 ```php
 // src/Form/CampaignForm.php
 namespace Drupal\campaigns\Form;
 
+use Drupal\campaigns\Service\CampaignsService;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CampaignForm extends FormBase {
+
+  public function __construct(
+    protected CampaignsService $campaignsService,
+  ) {}
+
+  public static function create(ContainerInterface $container) {
+    return new static($container->get('campaigns.campaigns_service'));
+  }
+
   public function getFormId() {
     return 'campaign_form';
   }
-  
+
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form['name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Campaign name'),
       '#required' => true,
     ];
-    
+
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
     ];
-    
+
     return $form;
   }
-  
+
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->messenger()->addMessage('Saved!');
+    $this->campaignsService->createCampaign(
+      ['title' => $form_state->getValue('name')],
+      $this->currentUser(),
+    );
+
+    $this->messenger()->addMessage($this->t('Saved!'));
   }
 }
 ```

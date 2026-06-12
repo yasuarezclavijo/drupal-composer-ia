@@ -18,6 +18,19 @@ description: Audita código Drupal contra Drupal Coding Standards (PHPCS Drupal/
 | PHPUnit | Cobertura 70%+ | Menos de 70% para código nuevo |
 | Docblocks | PSR-5 | Métodos públicos sin @param/@return |
 | TwigCS | Drupal Twig rules | Cualquier violation |
+| Capas | Resource/Controller/Form vs. Service/Repository | Lógica de negocio o acceso a datos fuera de Service/Repository |
+
+### Separación de capas (Resource/Controller/Form → Service → Repository)
+
+Revisar que ninguna clase en `src/Plugin/rest/resource/`, `src/Controller/`
+o `src/Form/` contenga:
+- `EntityTypeManagerInterface`, `->getQuery()`, `->loadMultiple()`, `->load()`, `->save()`, `->delete()` directamente
+- Transformación de entidades a arrays/DTOs de salida
+- Reglas de validación de negocio (más allá de la forma del request)
+
+Esa lógica debe estar en `src/Service/` (negocio) y `src/Repository/`
+(datos), registrados en `*.services.yml`. Ver
+[create-api-endpoint](../commands/create-api-endpoint.md#arquitectura-de-capas-obligatoria).
 
 ## Flujo de revisión
 
@@ -39,6 +52,7 @@ description: Audita código Drupal contra Drupal Coding Standards (PHPCS Drupal/
    - [ ] PHPUnit: 70%+ coverage
    - [ ] Docblocks: métodos públicos documentados
    - [ ] No debug code (die, var_dump, dpm, syslog, etc.)
+   - [ ] Resource/Controller/Form sin lógica de negocio ni acceso a datos directo (delegado en Service/Repository)
 
 ## Paths a revisar
 - `web/modules/custom/**/*.php`
@@ -74,6 +88,9 @@ composer fix          # Auto-fijar PHPCS
 
 ### Debug code
 - Status: PASS/FAIL
+
+### Separación de capas (Resource/Controller/Form → Service → Repository)
+- Status: PASS/FAIL | Detalle: [archivo:línea con lógica fuera de lugar, si aplica]
 
 ## Recomendaciones
 [Si hay]

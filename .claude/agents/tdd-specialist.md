@@ -37,6 +37,16 @@ Segundo paso de cualquier feature nueva o cambio de comportamiento:
   Kernel     → integración parcial con Drupal (entities, plugins, config)
   Functional → flujo completo end-to-end (formularios, rutas, permisos)
   ```
+- **Mapeo por capa** (Resource/Controller/Form → Service → Repository, ver
+  [create-api-endpoint](../commands/create-api-endpoint.md#arquitectura-de-capas-obligatoria)):
+  ```
+  Service    → Unit test, mockeando el/los Repository (createMock)
+  Repository → Kernel test (necesita EntityTypeManager/DB real)
+  Resource/Controller/Form → Functional test end-to-end (HTTP/rutas/permisos)
+  ```
+  Cada feature con esta arquitectura debe tener AL MENOS un Unit test del
+  Service (rojo: clase Service no existe) y un Functional test del
+  Resource/Controller (rojo: ruta inexistente o 404/403).
 - Escribir tests en `tests/src/{Unit,Kernel,Functional}/`
 - Ejecutar `composer test` — debe fallar por clase/método inexistente, NO por errores de sintaxis
 

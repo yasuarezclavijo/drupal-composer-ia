@@ -49,6 +49,12 @@ db_query("SELECT * FROM users WHERE email = '$email'");
 \Drupal::database()->select('users', 'u')->condition('u.email', $email)->execute();
 ```
 
+> Estas queries solo deben existir en `src/Repository/` (ver
+> [create-api-endpoint](../commands/create-api-endpoint.md#arquitectura-de-capas-obligatoria)).
+> Si aparece `db_query`, `->select(`, `->getQuery()` o similar en
+> `src/Plugin/rest/resource/`, `src/Controller/` o `src/Form/`, es también un
+> hallazgo de separación de capas, no solo de seguridad.
+
 **4. Permission Checks**
 ```php
 // MALO: Sin verificar acceso

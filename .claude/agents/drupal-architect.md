@@ -90,6 +90,25 @@ GraphQL  → Clientes con queries variables
 **Contrib modules permitidos:**
 - search_api, views, webform, field_group, linkit, entity_usage, rules, hook_event_dispatcher
 
+### Capas: Resource/Controller/Form + Service + Repository (obligatorio)
+
+Todo diseño que incluya una clase expuesta al exterior (REST Resource,
+Controller, Form, Drush command) debe especificar explícitamente en el
+documento de diseño:
+
+- **Capa HTTP/UI** (`src/Plugin/rest/resource/`, `src/Controller/`, `src/Form/`):
+  permisos, parseo de input, mapeo de excepciones de dominio → HTTP/form
+  errors, construcción de la respuesta. Sin `getQuery()`, `loadMultiple()`
+  ni reglas de negocio.
+- **Service** (`src/Service/`): lógica de negocio y validaciones de dominio,
+  orquesta uno o varios Repository.
+- **Repository** (`src/Repository/`): único punto con acceso a datos
+  (`getQuery()`, `load*()`, `create()`, `save()`, `delete()`).
+
+Registrar Service y Repository en `MODULO.services.yml` con DI. Detalle y
+ejemplo completo: [create-api-endpoint](../commands/create-api-endpoint.md#arquitectura-de-capas-obligatoria)
+y [docs/architecture.md](../../docs/architecture.md#6-resource-delgado--service--repository-vs-lógica-de-negocio-en-el-resource).
+
 ### Template de output
 
 ```markdown
@@ -116,6 +135,10 @@ Justificación: ...
 ## Diseño técnico
 ### Data Structure
 ### API
+### Capas
+- Resource/Controller/Form (HTTP/UI): ...
+- Service (negocio): ...
+- Repository (datos): ...
 ### Cache Strategy
 
 ## Próximos pasos
