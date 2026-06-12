@@ -64,7 +64,8 @@ scripts/
 docs/
 ├── architecture.md
 ├── quality-gates.md
-└── activity-log/
+├── activity-log/
+└── requirements/      ← README.md + _TEMPLATE.md (solo si no existen)
 
 web/modules/custom/         ← creado si no existe
 web/themes/custom/          ← creado si no existe

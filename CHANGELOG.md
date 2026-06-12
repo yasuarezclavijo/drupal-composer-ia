@@ -16,6 +16,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.
 - **`quality/phpunit.xml.dist`**: configuración de PHPUnit 11 para Drupal 11 (bootstrap `web/core/tests/bootstrap.php`, `HtmlOutputLogger`, `DebugDump`, testsuites unit/kernel/functional/functional-javascript y `<source>` con cobertura para `web/{modules,profiles,themes}/custom`). El installer la copia a `/phpunit.xml` en el proyecto destino, sustituyendo el placeholder `__SIMPLETEST_BASE_URL__` con la URL DDEV detectada (o `http://localhost` si no hay DDEV).
 - **Comando `ddev test-coverage`** (`templates/ddev-test-coverage`, copiado a `.ddev/commands/web/`): ejecuta `XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=coverage --coverage-text`, ya que `pcov` no está disponible en la imagen webimage de DDEV y `ddev composer <script>` fuerza `XDEBUG_MODE=off`.
 - **`docs/architecture.md`**: nueva sección "Dependencia implícita del perfil `standard`" documentando la colisión de `field.storage.node.body` cuando un módulo custom declara un content type con campo `body`.
+- **`docs/requirements/`**: el installer copia `requirements/README.md` y `requirements/_TEMPLATE.md` del blueprint a `docs/requirements/` en el proyecto destino (sin sobreescribir si ya existen), con la plantilla de especificación de requerimientos que el Coordinador consume vía `@coordinator Ejecuta el requerimiento docs/requirements/<archivo>.md ...`.
 
 ### Changed
 

@@ -11,22 +11,22 @@ En otras palabras: **el prompt al coordinador se reduce a una ruta de archivo**,
 
 ## Cómo funciona
 
-1. Copiar [`_TEMPLATE.md`](_TEMPLATE.md) a `requirements/YYYY-MM-DD-<slug>.md`.
+1. Copiar [`_TEMPLATE.md`](_TEMPLATE.md) a `docs/requirements/YYYY-MM-DD-<slug>.md`.
 2. Completar **todas** las secciones. Las secciones 6 (reglas de negocio), 7 (Gherkin) y 11 (constraints/supuestos) son las más importantes: ahí se toman las decisiones para que los agentes no vuelvan a preguntar.
 3. Cambiar el estado de `📝 Borrador` a `✅ Listo para ejecutar`.
 4. Iniciar el flujo con el comando exacto (queda también guardado, con la ruta ya resuelta, en la sección 14 del propio documento):
 
    ```
-   @coordinator Ejecuta el requerimiento requirements/YYYY-MM-DD-<slug>.md siguiendo el flujo obligatorio
+   @coordinator Ejecuta el requerimiento docs/requirements/YYYY-MM-DD-<slug>.md siguiendo el flujo obligatorio
    y genera el activity log correspondiente, consulta cualquier ambiguedad que detectes durante el analisis del requerimiento.
    ```
 
-5. El Coordinador sigue el flujo habitual (ver [.claude/agents/coordinator.md](../.claude/agents/coordinator.md)) y genera la entrada correspondiente en `docs/activity-log/`.
+5. El Coordinador sigue el flujo habitual (ver [.claude/agents/coordinator.md](../../.claude/agents/coordinator.md)) y genera la entrada correspondiente en `docs/activity-log/`.
 
 ## Convención de nombres
 
 ```
-requirements/YYYY-MM-DD-<slug-del-requisito>.md
+docs/requirements/YYYY-MM-DD-<slug-del-requisito>.md
 ```
 
 `slug-del-requisito` es una versión corta en kebab-case (máx. 5 palabras). Mismo criterio que `docs/activity-log/`.

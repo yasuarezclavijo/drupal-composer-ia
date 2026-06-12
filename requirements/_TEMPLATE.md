@@ -197,7 +197,7 @@ Repetir un `Scenario` por cada regla de negocio relevante de la sección 6.
 ## 14. Cómo ejecutar este requerimiento
 
 ```
-@coordinator Ejecuta el requerimiento requirements/{{archivo}}.md siguiendo el flujo obligatorio
+@coordinator Ejecuta el requerimiento docs/requirements/{{archivo}}.md siguiendo el flujo obligatorio
 (drupal-architect → tdd-specialist → implementación → code-reviewer → security-reviewer → accessibility-reviewer)
 y genera el activity log correspondiente.
 ```

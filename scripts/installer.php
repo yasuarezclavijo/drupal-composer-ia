@@ -14,6 +14,8 @@
  *   - Merge de require (drush/drush), require-dev, scripts y config
  *     (use-github-api) en composer.json del proyecto
  *   - Docs de referencia (architecture, quality-gates, activity-log)
+ *   - docs/requirements/ (README.md + _TEMPLATE.md para especificar
+ *     requerimientos antes de invocar al coordinador)
  *
  * Usage (auto-run via post-install-cmd):
  *   php scripts/installer.php install
@@ -143,6 +145,7 @@ class BlueprintInstaller {
     $this->copy_quality_configs(force: false);
     $this->copy_wrapper_scripts(force: false);
     $this->copy_docs();
+    $this->copy_requirements_dir();
     $this->ensure_drupal_dirs();
     $this->ensure_test_dirs();
     $this->ensure_phpunit_config();
@@ -169,6 +172,7 @@ class BlueprintInstaller {
     $this->copy_wrapper_scripts(force: true);
     // CLAUDE.md y docs NO se sobreescriben (pueden tener customizaciones)
     $this->copy_docs(skip_existing: true);
+    $this->copy_requirements_dir();
     $this->ensure_test_dirs();
     $this->ensure_phpunit_config();
     $this->copy_ddev_coverage_command(force: true);
@@ -242,6 +246,20 @@ class BlueprintInstaller {
     }
 
     echo "✓ docs/ (architecture.md, quality-gates.md, activity-log/)\n";
+  }
+
+  /**
+   * Copia la plantilla de requerimientos (requirements/ en el blueprint) a
+   * docs/requirements/ en el proyecto destino. Nunca sobreescribe archivos
+   * existentes (los requerimientos del proyecto son del usuario).
+   */
+  private function copy_requirements_dir(): void {
+    $src  = $this->blueprint_root . '/requirements';
+    $dest = $this->project_root   . '/docs/requirements';
+
+    $this->copy_directory($src, $dest);
+
+    echo "✓ docs/requirements/ (README.md, _TEMPLATE.md)\n";
   }
 
   private function ensure_drupal_dirs(): void {
