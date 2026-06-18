@@ -117,6 +117,24 @@ y [docs/architecture.md](docs/architecture.md#6-resource-delgado--service--repos
 **Contrib modules aprobados:**
 search_api, views, webform, field_group, linkit, entity_usage, rules, hook_event_dispatcher
 
+## Políticas de plataforma (Capa 1)
+
+Las políticas específicas de Drupal están en `.claude/policies/platform/`. Son obligatorias para este proyecto.
+La estructura completa del sistema de políticas está en `.claude/policies/README.md` (gestionado por `kadabrait_uy/kadabra-core`).
+
+## Log de sesiones IA
+
+Cada sesión significativa de trabajo con agentes se registra en `.claude/logs/`:
+
+```
+.claude/logs/
+├── _TEMPLATE.md                      ← plantilla con formato de log
+└── YYYY-MM-DD-HH-MM-<tarea>.md       ← logs reales (creados por el coordinador)
+```
+
+El log incluye: tareas realizadas, archivos modificados, estimación de tokens y costo en USD.
+Ver `.claude/policies/core/session-logging.md` para el estándar completo y tabla de precios.
+
 ## Documentación
 
 - Módulos nuevos: README en el módulo
@@ -128,3 +146,4 @@ search_api, views, webform, field_group, linkit, entity_usage, rules, hook_event
 
 Ver `docs/architecture.md` para decisiones de diseño.
 Ver `docs/quality-gates.md` para detalle de quality gates.
+Ver `docs/policy-layers-architecture.md` para el sistema de herencia de políticas.

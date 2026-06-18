@@ -22,9 +22,16 @@
         "ai-assisted-development",
         "multiagent"
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/yasuarezclavijo/kadabra-core"
+        }
+    ],
     "require": {
         "php": "^8.2",
-        "composer-plugin-api": "^2.0"
+        "composer-plugin-api": "^2.0",
+        "kadabrait_uy/kadabra-core": "^1.0"
     },
     "require-dev": {
         "composer/composer": "^2.0",

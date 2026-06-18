@@ -131,6 +131,25 @@ Orden obligatorio:
 
 ---
 
+## Log de sesión IA (Capa 0 — política obligatoria)
+
+Lee `.claude/policies/core/session-logging.md` para el estándar completo.
+
+Al finalizar cualquier tarea que involucre creación/modificación de código o decisiones de diseño,
+crear un log de sesión en `.claude/logs/` usando la plantilla `.claude/logs/_TEMPLATE.md`.
+
+**Cuándo crear el log:**
+- Al completar una tarea (antes de responder "listo")
+- Cuando el usuario dice "cierra la sesión", "termina por hoy" o similar
+- Al finalizar una sesión de más de 10 minutos con cambios de código
+
+**Nombre del archivo:** `.claude/logs/YYYY-MM-DD-HH-MM-<slug-de-la-tarea>.md`
+
+**Estimación de tokens:** usar el contador visible en Claude Code si está disponible.
+Si no, usar las heurísticas de la política de logging (sesión normal = ~30k-80k tokens).
+
+---
+
 ## Checklist antes de marcar como "hecho"
 
 - [ ] Requisito original completamente satisfecho

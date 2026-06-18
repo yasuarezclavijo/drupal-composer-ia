@@ -23,6 +23,7 @@ docs/activity-log/YYYY-MM-DD-<slug-del-requisito>.md
 | Fecha | Tarea | Estado | Archivo |
 |---|---|---|---|
 | 2026-06-10 | Fix quality gates + estándares Drupal/DrupalPractice | ✅ Completado | [2026-06-10-fix-quality-gates-drupal-standards.md](2026-06-10-fix-quality-gates-drupal-standards.md) |
+| 2026-06-18 | Diseño arquitectura de capas de políticas (kadabra-core) | ✅ Completado | [2026-06-18-policy-layers-architecture.md](2026-06-18-policy-layers-architecture.md) |
 
 ## Plantilla
 
