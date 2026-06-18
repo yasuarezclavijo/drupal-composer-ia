@@ -80,6 +80,18 @@ class BlueprintInstaller {
     'symfony/var-dumper'             => '^7.4',
   ];
 
+  /**
+   * Repositorios VCS que el proyecto destino necesita para resolver dependencias
+   * que aún no están en Packagist. Cada entrada se agrega solo si no existe una
+   * entrada con la misma URL en el composer.json del proyecto.
+   */
+  private array $vcs_repositories = [
+    [
+      'type' => 'vcs',
+      'url'  => 'https://github.com/yasuarezclavijo/kadabra-core',
+    ],
+  ];
+
   /** Scripts Composer que el proyecto destino necesita */
   private array $composer_scripts = [
     'qa'            => ['@lint:phpcs', '@lint:phpstan'],
@@ -417,6 +429,19 @@ class BlueprintInstaller {
     $path = $this->project_root . '/composer.json';
     $json = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
     $changed = false;
+
+    // --- repositories (VCS para paquetes fuera de Packagist) ---
+    $json['repositories'] ??= [];
+    $existing_urls = array_column($json['repositories'], 'url');
+    foreach ($this->vcs_repositories as $repo) {
+      if (!in_array($repo['url'], $existing_urls, strict: true)) {
+        $json['repositories'][] = $repo;
+        echo "✓ Added repository: {$repo['url']}\n";
+        $changed = true;
+      } else {
+        echo "⊘ repository {$repo['url']} already present — skipped\n";
+      }
+    }
 
     // --- require ---
     $json['require'] ??= [];
