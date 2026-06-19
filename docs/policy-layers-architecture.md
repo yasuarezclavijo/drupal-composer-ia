@@ -647,6 +647,6 @@ Esta es la secuencia sugerida de trabajo (tareas separadas):
 | 4 | Crear `.claude/policies/platform/drupal-security-extensions.md` | drupal-blueprint | Alta |
 | 5 | Actualizar los 5 agentes afectados para leer políticas al inicio | drupal-blueprint | Alta |
 | 6 | Actualizar `installer.php` para copiar `policies/platform/` | drupal-blueprint | Alta |
-| 7 | Crear `.claude/policies/project/` con README de Capa 2 | drupal-blueprint | Media |
+| 7 | Crear `.claude/policies/project/` con README y _TEMPLATE de Capa 2 | kadabra-core | ✅ Completado |
 | 8 | Tests de integración del installer | drupal-blueprint | Media |
 | 9 | Documentar en README de ambos repos | Ambos | Media |

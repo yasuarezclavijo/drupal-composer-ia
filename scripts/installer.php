@@ -203,26 +203,23 @@ class BlueprintInstaller {
     $dest = $this->project_root   . '/.claude';
 
     if ($force) {
-      // En update: sobreescribir agents/, commands/, policies/platform/ y logs/_TEMPLATE.md
-      // NO tocar policies/core/ (es territorio de kadabra-core)
-      // NO tocar policies/project/ (es territorio del proyecto)
+      // En update: sobreescribir agents/, commands/ y policies/platform/
+      // NO tocar policies/core/ — territorio de kadabrait_uy/kadabra-core
+      // NO tocar policies/project/ — territorio del proyecto
+      // NO tocar logs/ — territorio de kadabrait_uy/kadabra-core
       $this->force_copy_directory($src . '/agents',   $dest . '/agents');
       $this->force_copy_directory($src . '/commands', $dest . '/commands');
       $this->copy_platform_policies(force: true);
-      $this->copy_single('.claude/logs/_TEMPLATE.md', '/.claude/logs/_TEMPLATE.md', skip_existing: false);
     } else {
       $this->copy_directory($src . '/agents',   $dest . '/agents');
       $this->copy_directory($src . '/commands', $dest . '/commands');
       $this->copy_platform_policies(force: false);
-      $this->copy_single('.claude/logs/_TEMPLATE.md', '/.claude/logs/_TEMPLATE.md', skip_existing: true);
     }
 
-    // Siempre garantizar que el directorio de proyecto exista
-    $this->ensure_project_policies_dir();
-    // Siempre garantizar que el directorio de logs exista
+    // Garantizar que el directorio de logs exista (kadabra-core lo puebla con _TEMPLATE.md)
     $this->ensure_logs_dir();
 
-    echo "✓ .claude/ (6 agents + 3 slash commands + platform policies + logs template)\n";
+    echo "✓ .claude/ (6 agents + 3 slash commands + platform policies)\n";
   }
 
   private function copy_platform_policies(bool $force): void {
@@ -239,21 +236,6 @@ class BlueprintInstaller {
     } else {
       $this->copy_directory($src, $dest);
       echo "✓ .claude/policies/platform/ (Capa 1)\n";
-    }
-  }
-
-  private function ensure_project_policies_dir(): void {
-    $dir = $this->project_root . '/.claude/policies/project';
-    if (!is_dir($dir)) {
-      mkdir($dir, 0755, true);
-    }
-
-    // README y _TEMPLATE solo si no existen (son del proyecto)
-    $readme_src = $this->blueprint_root . '/.claude/policies/project/README.md';
-    $readme_dest = $dir . '/README.md';
-    if (file_exists($readme_src) && !file_exists($readme_dest)) {
-      copy($readme_src, $readme_dest);
-      echo "✓ .claude/policies/project/README.md\n";
     }
   }
 

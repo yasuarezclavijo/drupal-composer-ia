@@ -29,6 +29,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 ### Fixed
 
+- **Duplicación de responsabilidades con kadabra-core**: el `installer.php` ya no copia `.claude/logs/_TEMPLATE.md` ni crea `.claude/policies/project/README.md` / `_TEMPLATE.md` — esos archivos son territorio exclusivo de `kadabrait_uy/kadabra-core` (que es dependencia directa de este paquete y siempre se instala). Se eliminaron los archivos `.claude/policies/project/README.md` y `_TEMPLATE.md` del repo del blueprint. Se actualizó el roadmap en `docs/policy-layers-architecture.md` (ítem 7) para reflejar la propiedad correcta.
+
+
+
 - **`composer qa` no-op silencioso** (CRÍTICO): los scripts `lint:phpcs`/`lint:phpstan` ejecutaban `@php scripts/*.sh`, que con scripts bash simplemente vuelca el código fuente como texto y retorna `exit 0`. Corregido a `bash scripts/*.sh`. El installer aplica este fix automáticamente a proyectos ya generados vía `composer update kdb/drupal-agentic-blueprint` (`broken_scripts_fixes`).
 - **`phpunit.xml` ausente en la raíz del proyecto**: provocaba fallo inmediato de `composer test`. El installer ahora copia `quality/phpunit.xml.dist` a `/phpunit.xml` (sin sobrescribir si ya existe).
 - **`web/sites/simpletest/browser_output` ausente**: requerido por `HtmlOutputLogger`; el installer crea el directorio con `.gitkeep`.
